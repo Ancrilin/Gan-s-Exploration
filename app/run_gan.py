@@ -521,7 +521,7 @@ if __name__ == '__main__':
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
     parser.add_argument('--seed', type=int, default=123, help='seed')
-    parser.add_argument('--args.g_time', default=2, type=int)
+    parser.add_argument('--g_time', default=2, type=int)
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
