@@ -148,7 +148,7 @@ def main(args):
                 id_sample = (y == 1.0)
                 weight = torch.ones(len(id_sample)).to(device) - id_sample * 1.0
                 real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
-
+                logger.info('weight: {}, disoutput: {}'.format(weight.size(), D_gen_real_discriminator_output.size()))
                 optimizer_D_g.zero_grad()
                 D_gen_real_discriminator_output, f_vector = D_g(real_feature)
                 # D_gen_real_loss = adversarial_loss(D_gen_real_discriminator_output, valid_label) # 判别器对真实样本的损失
