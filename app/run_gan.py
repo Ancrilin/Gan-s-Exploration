@@ -116,7 +116,7 @@ def main(args):
         valid_oos_ind_f_score = []
 
         for i in range(args.n_epoch):
-            logger.info('********************************************************')
+            logger.info('***********************************')
             logger.info('epoch: {}'.format(i))
 
             # Initialize model state
@@ -137,6 +137,10 @@ def main(args):
                 token, mask, type_ids, y = sample
                 batch = len(token)
 
+                all_g_D_g_loss = 0
+                D_gen_real_loss = None
+                D_gen_fake_loss = None
+
                 # the label used to train generator and discriminator.
                 valid_label = FloatTensor(batch, 1).fill_(1.0).detach()
                 fake_label = FloatTensor(batch, 1).fill_(0.0).detach()
@@ -144,7 +148,6 @@ def main(args):
                 optimizer_E.zero_grad()
                 sequence_output, pooled_output = E(token, mask, type_ids)
                 real_feature = pooled_output
-
 
                 for gan_i in range(args.time):
                     # ------------------------- train D_g -------------------------#
@@ -164,11 +167,10 @@ def main(args):
                     D_gen_fake_loss = adversarial_loss(D_gen_fake_discriminator_output, fake_label)  # 判别器对假样本的损失
 
                     D_gen_loss = D_gen_real_loss + D_gen_fake_loss
-                    D_gen_loss.backward()  # 保存计算图，生成器还要使用
+                    D_gen_loss.backward(retain_graph=True)  # 保存计算图，生成器还要使用
                     optimizer_D_g.step()
 
                     # ------------------------- train G -------------------------#
-                    all_g_D_g_loss = 0
                     list_g_D_g_loss = []
                     for gi in range(args.g_time):
                         optimizer_G.zero_grad()
