@@ -255,37 +255,35 @@ def main(args):
                 discriminator_output, f_vector = D_detect(real_feature)
                 all_detection_preds.append(discriminator_output)
 
-            all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
-            all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
-            all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
-            all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
+        all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
+        all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
+        all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
 
+        # 计算损失
+        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        result['detection_loss'] = detection_loss
 
-            logger.info('all_detection_preds: {}, all_binary_y: {}'.format(all_detection_preds.size(), all_binary_y.size()))
-            # 计算损失
-            detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
-            result['detection_loss'] = detection_loss
+        logger.info(
+            metrics.classification_report(all_binary_y, all_detection_binary_preds, target_names=['oos', 'in']))
 
-            logger.info(
-                metrics.classification_report(all_binary_y, all_detection_binary_preds, target_names=['oos', 'in']))
+        # report
+        oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(
+            all_detection_binary_preds, all_binary_y)
+        detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
-            # report
-            oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(
-                all_detection_binary_preds, all_binary_y)
-            detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
+        y_score = all_detection_preds.squeeze().tolist()
+        eer = metrics.cal_eer(all_binary_y, y_score)
 
-            y_score = all_detection_preds.squeeze().tolist()
-            eer = metrics.cal_eer(all_binary_y, y_score)
+        result['eer'] = eer
+        result['all_detection_binary_preds'] = all_detection_binary_preds
+        result['detection_acc'] = detection_acc
+        result['all_binary_y'] = all_binary_y
+        result['oos_ind_precision'] = oos_ind_precision
+        result['oos_ind_recall'] = oos_ind_recall
+        result['oos_ind_f_score'] = oos_ind_fscore
 
-            result['eer'] = eer
-            result['all_detection_binary_preds'] = all_detection_binary_preds
-            result['detection_acc'] = detection_acc
-            result['all_binary_y'] = all_binary_y
-            result['oos_ind_precision'] = oos_ind_precision
-            result['oos_ind_recall'] = oos_ind_recall
-            result['oos_ind_f_score'] = oos_ind_fscore
-
-            return result
+        return result
 
     def test(dataset):
         # # load BERT and GAN
@@ -323,38 +321,38 @@ def main(args):
                 discriminator_output, f_vector = D_detect(real_feature)
                 all_detection_preds.append(discriminator_output)
 
-            all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
-            all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
-            all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
-            all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
+        all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
+        all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
+        all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
 
-            # 计算损失
-            detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
-            result['detection_loss'] = detection_loss
+        # 计算损失
+        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        result['detection_loss'] = detection_loss
 
-            logger.info(
-                metrics.classification_report(all_binary_y, all_detection_binary_preds, target_names=['oos', 'in']))
+        logger.info(
+            metrics.classification_report(all_binary_y, all_detection_binary_preds, target_names=['oos', 'in']))
 
-            # report
-            oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(
-                all_detection_binary_preds, all_binary_y)
-            detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
+        # report
+        oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(
+            all_detection_binary_preds, all_binary_y)
+        detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
-            y_score = all_detection_preds.squeeze().tolist()
-            eer = metrics.cal_eer(all_binary_y, y_score)
+        y_score = all_detection_preds.squeeze().tolist()
+        eer = metrics.cal_eer(all_binary_y, y_score)
 
-            result['eer'] = eer
-            result['all_detection_binary_preds'] = all_detection_binary_preds
-            result['detection_acc'] = detection_acc
-            result['all_binary_y'] = all_binary_y
-            result['oos_ind_precision'] = oos_ind_precision
-            result['oos_ind_recall'] = oos_ind_recall
-            result['oos_ind_f_score'] = oos_ind_fscore
-            if args.do_vis:
-                all_features = torch.cat(all_features, 0).cpu().numpy()
-                result['all_features'] = all_features
+        result['eer'] = eer
+        result['all_detection_binary_preds'] = all_detection_binary_preds
+        result['detection_acc'] = detection_acc
+        result['all_binary_y'] = all_binary_y
+        result['oos_ind_precision'] = oos_ind_precision
+        result['oos_ind_recall'] = oos_ind_recall
+        result['oos_ind_f_score'] = oos_ind_fscore
+        if args.do_vis:
+            all_features = torch.cat(all_features, 0).cpu().numpy()
+            result['all_features'] = all_features
 
-            return result
+        return result
 
     def get_fake_feature(num_output):
         """
