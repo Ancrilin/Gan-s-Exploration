@@ -171,8 +171,8 @@ def main(args):
                 ood_fake_detect_discriminator_output, f_vector = D_detect(fake_feature)
                 ood_fake_detect_loss = adversarial_loss(ood_fake_detect_discriminator_output, fake_label)# 假样本趋向ood
 
-                D_ood_loss = args.beta * ood_real_detect_loss + (1 - args.beta) * ood_fake_detect_loss# 真实样本与假样本比例
-                D_ood_loss.backward()
+                D_detect_loss = args.beta * ood_real_detect_loss + (1 - args.beta) * ood_fake_detect_loss# 真实样本与假样本比例
+                D_detect_loss.backward()
                 optimizer_D_detect.step()
 
                 if args.fine_tune:
@@ -320,6 +320,8 @@ def main(args):
 
                 discriminator_output, f_vector = D_detect(real_feature)
                 all_detection_preds.append(discriminator_output)
+                if args.do_vis:
+                    all_features.append(f_vector)
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
