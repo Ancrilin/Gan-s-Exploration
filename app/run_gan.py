@@ -116,6 +116,7 @@ def main(args):
         valid_oos_ind_f_score = []
 
         for i in range(args.n_epoch):
+            logger.info('epoch: {}'.format(i))
 
             # Initialize model state
             G.train()
@@ -143,25 +144,41 @@ def main(args):
                 sequence_output, pooled_output = E(token, mask, type_ids)
                 real_feature = pooled_output
 
-                #------------------------- train D_g -------------------------#
-                # train on D_g real
-                id_sample = (y == 1.0)
-                weight = torch.ones(len(id_sample)).to(device) - id_sample * 1.0
-                real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
-                optimizer_D_g.zero_grad()
-                D_gen_real_discriminator_output, f_vector = D_g(real_feature)
-                # D_gen_real_loss = adversarial_loss(D_gen_real_discriminator_output, valid_label) # 判别器对真实样本的损失
-                D_gen_real_loss = real_loss_func(D_gen_real_discriminator_output, valid_label.squeeze())
 
-                # train on D_g fake
-                z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
-                fake_feature = G(z).detach()
-                D_gen_fake_discriminator_output, f_vector = D_g(fake_feature)
-                D_gen_fake_loss = adversarial_loss(D_gen_fake_discriminator_output, fake_label) # 判别器对假样本的损失
+                for gan_i in range(args.time):
+                    # ------------------------- train D_g -------------------------#
+                    # train on D_g real
+                    id_sample = (y == 1.0)
+                    weight = torch.ones(len(id_sample)).to(device) - id_sample * 1.0
+                    real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
+                    optimizer_D_g.zero_grad()
+                    D_gen_real_discriminator_output, f_vector = D_g(real_feature)
+                    # D_gen_real_loss = adversarial_loss(D_gen_real_discriminator_output, valid_label) # 判别器对真实样本的损失
+                    D_gen_real_loss = real_loss_func(D_gen_real_discriminator_output, valid_label.squeeze())
 
-                D_gen_loss = D_gen_real_loss + D_gen_fake_loss
-                D_gen_loss.backward(retain_graph=True)# 保存计算图，生成器还要使用
-                optimizer_D_g.step()
+                    # train on D_g fake
+                    z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                    fake_feature = G(z).detach()
+                    D_gen_fake_discriminator_output, f_vector = D_g(fake_feature)
+                    D_gen_fake_loss = adversarial_loss(D_gen_fake_discriminator_output, fake_label)  # 判别器对假样本的损失
+
+                    D_gen_loss = D_gen_real_loss + D_gen_fake_loss
+                    D_gen_loss.backward(retain_graph=True)  # 保存计算图，生成器还要使用
+                    optimizer_D_g.step()
+
+                    # ------------------------- train G -------------------------#
+                    all_g_D_g_loss = 0
+                    list_g_D_g_loss = []
+                    for gi in range(args.g_time):
+                        optimizer_G.zero_grad()
+                        z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                        fake_feature = G(z).detach()
+                        D_gen_fake_discriminator_output, f_vector = D_g(fake_feature)
+                        g_D_g_loss = adversarial_loss(D_gen_fake_discriminator_output, valid_label)  # 生成器趋向真实样本
+                        g_D_g_loss.backward()
+                        optimizer_G.step()
+                        all_g_D_g_loss += g_D_g_loss.detach()
+                        list_g_D_g_loss.append(g_D_g_loss)
 
                 # ------------------------- train D_detect_ood -------------------------#
                 # train on real(detect real sample)
@@ -181,18 +198,6 @@ def main(args):
 
                 if args.fine_tune:
                     optimizer_E.step()
-
-                # ------------------------- train G -------------------------#
-                all_g_D_g_loss = 0
-                for gi in range(args.g_time):
-                    optimizer_G.zero_grad()
-                    z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
-                    fake_feature = G(z).detach()
-                    D_gen_fake_discriminator_output, f_vector = D_g(fake_feature)
-                    g_D_g_loss = adversarial_loss(D_gen_fake_discriminator_output, valid_label)# 生成器趋向真实样本
-                    g_D_g_loss.backward()
-                    optimizer_G.step()
-                    all_g_D_g_loss += g_D_g_loss.detach()
 
                 global_step += 1
 
@@ -529,6 +534,7 @@ if __name__ == '__main__':
                         help='Whether to fine tune BERT during training.')
     parser.add_argument('--seed', type=int, default=123, help='seed')
     parser.add_argument('--g_time', default=2, type=int)
+    parser.add_argument('--time', default=2, type=int)
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
