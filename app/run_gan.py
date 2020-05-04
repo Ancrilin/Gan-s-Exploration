@@ -151,6 +151,7 @@ def main(args):
                 optimizer_D_g.zero_grad()
                 D_gen_real_discriminator_output, f_vector = D_g(real_feature)
                 D_gen_real_discriminator_output = D_gen_real_discriminator_output.squeeze()
+                logger.info('weight: {}, Dd :{}, valid: {}'.format(weight.size(), D_gen_real_discriminator_output, valid_label.size()))
                 # D_gen_real_loss = adversarial_loss(D_gen_real_discriminator_output, valid_label) # 判别器对真实样本的损失
                 D_gen_real_loss = real_loss_func(D_gen_real_discriminator_output, valid_label)
 
