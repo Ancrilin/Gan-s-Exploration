@@ -260,6 +260,8 @@ def main(args):
             all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
             all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
 
+
+            logger.info('all_detection_preds: {}, all_binary_y: {}'.format(all_detection_preds.size(), all_binary_y.size()))
             # 计算损失
             detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
             result['detection_loss'] = detection_loss
@@ -512,7 +514,7 @@ if __name__ == '__main__':
     parser.add_argument('--G_lr', type=float, default=1e-5, help="Learning rate for Generator.")
     parser.add_argument('--beta', type=float, default=0.1, help="Weight of fake sample loss for Discriminator.")
 
-    parser.add_argument('--bert_lr', type=float, default=2e-4, help="Learning rate for Generator.")
+    parser.add_argument('--bert_lr', type=float, default=2e-5, help="Learning rate for Generator.")
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
     parser.add_argument('--seed', type=int, default=123, help='seed')
