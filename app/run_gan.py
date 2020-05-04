@@ -116,6 +116,7 @@ def main(args):
         valid_oos_ind_f_score = []
 
         for i in range(args.n_epoch):
+            logger.info('********************************************************')
             logger.info('epoch: {}'.format(i))
 
             # Initialize model state
@@ -163,7 +164,7 @@ def main(args):
                     D_gen_fake_loss = adversarial_loss(D_gen_fake_discriminator_output, fake_label)  # 判别器对假样本的损失
 
                     D_gen_loss = D_gen_real_loss + D_gen_fake_loss
-                    D_gen_loss.backward(retain_graph=True)  # 保存计算图，生成器还要使用
+                    D_gen_loss.backward()  # 保存计算图，生成器还要使用
                     optimizer_D_g.step()
 
                     # ------------------------- train G -------------------------#
