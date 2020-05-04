@@ -180,7 +180,7 @@ def main(args):
 
                 # ------------------------- train G -------------------------#
                 all_g_D_g_loss = 0
-                for gi in args.g_time:
+                for gi in range(args.g_time):
                     optimizer_G.zero_grad()
                     g_D_g_loss = adversarial_loss(D_gen_fake_discriminator_output, valid_label)# 生成器趋向真实样本
                     g_D_g_loss.backward()
