@@ -179,10 +179,13 @@ def main(args):
                     optimizer_E.step()
 
                 # ------------------------- train G -------------------------#
-                optimizer_G.zero_grad()
-                g_D_g_loss = adversarial_loss(D_gen_fake_discriminator_output, valid_label)# 生成器趋向真实样本
-                g_D_g_loss.backward()
-                optimizer_G.step()
+                all_g_D_g_loss = 0
+                for gi in args.g_time:
+                    optimizer_G.zero_grad()
+                    g_D_g_loss = adversarial_loss(D_gen_fake_discriminator_output, valid_label)# 生成器趋向真实样本
+                    g_D_g_loss.backward()
+                    optimizer_G.step()
+                    all_g_D_g_loss += g_D_g_loss.detach()
 
                 global_step += 1
 
@@ -190,7 +193,7 @@ def main(args):
                 D_g_fake_loss += D_gen_fake_loss.detach()
                 D_detect_real_loss += ood_real_detect_loss.detach()
                 D_detect_fake_loss +=  ood_fake_detect_loss.detach()
-                G_loss += g_D_g_loss.detach()
+                G_loss += all_g_D_g_loss
 
             logger.info('[Epoch {}] Train: D_g_real_loss: {}'.format(i, D_g_real_loss / n_sample))
             logger.info('[Epoch {}] Train: D_g_fake_loss: {}'.format(i, D_g_fake_loss / n_sample))
@@ -518,6 +521,7 @@ if __name__ == '__main__':
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
     parser.add_argument('--seed', type=int, default=123, help='seed')
+    parser.add_argument('--args.g_time', default=2, type=int)
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
