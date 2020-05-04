@@ -186,8 +186,11 @@ def main(args):
                 all_g_D_g_loss = 0
                 for gi in range(args.g_time):
                     optimizer_G.zero_grad()
+                    z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                    fake_feature = G(z).detach()
+                    D_gen_fake_discriminator_output, f_vector = D_g(fake_feature)
                     g_D_g_loss = adversarial_loss(D_gen_fake_discriminator_output, valid_label)# 生成器趋向真实样本
-                    g_D_g_loss.backward(retain_graph=True)
+                    g_D_g_loss.backward()
                     optimizer_G.step()
                     all_g_D_g_loss += g_D_g_loss.detach()
 
