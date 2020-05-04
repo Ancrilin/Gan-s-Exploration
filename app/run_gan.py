@@ -145,9 +145,14 @@ def main(args):
 
                 #------------------------- train D_g -------------------------#
                 # train on D_g real
+                id_sample = (y == 1.0)
+                weight = torch.ones(len(id_sample)).to(device) - id_sample * 1.0
+                real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
+
                 optimizer_D_g.zero_grad()
                 D_gen_real_discriminator_output, f_vector = D_g(real_feature)
-                D_gen_real_loss = adversarial_loss(D_gen_real_discriminator_output, valid_label) # 判别器对真实样本的损失
+                # D_gen_real_loss = adversarial_loss(D_gen_real_discriminator_output, valid_label) # 判别器对真实样本的损失
+                D_gen_real_loss = real_loss_func(D_gen_real_discriminator_output, valid_label)
 
                 # train on D_g fake
                 z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
@@ -159,7 +164,7 @@ def main(args):
                 D_gen_loss.backward(retain_graph=True)# 保存计算图，生成器还要使用
                 optimizer_D_g.step()
 
-                # ------------------------- train D_ood -------------------------#
+                # ------------------------- train D_detect_ood -------------------------#
                 # train on real(detect real sample)
                 optimizer_D_detect.zero_grad()
                 ood_real_detect_discriminator_output, f_vector = D_detect(real_feature)
