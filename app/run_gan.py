@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import json
 
 import numpy as np
 import pandas as pd
@@ -49,6 +50,12 @@ def main(args):
     # Prepare data processor
     data_path = os.path.join(data_config['DataDir'], data_config[args.data_file])  # 把目录和文件名合成一个路径
     label_path = data_path.replace('.json', '.label')
+    with open(data_path, 'r', encoding='utf-8')as fp:
+        data = json.load(fp)
+        for  type in data:
+            logger.info('{} : {}'.format(type, len(data[type])))
+    with open(label_path, 'r', encoding='utf-8')as fp:
+        logger.info(json.load(fp))
 
     if args.dataset == 'oos-eval':
         processor = OOSProcessor(bert_config, maxlen=32)
