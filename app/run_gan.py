@@ -52,12 +52,16 @@ def main(args):
 
     if args.dataset == 'oos-eval':
         processor = OOSProcessor(bert_config, maxlen=32)
+        logger.info('OOSProcessor')
     elif args.dataset == 'smp':
         processor = SMPProcessor(bert_config, maxlen=32)
+        logger.info('SMPProcessor')
     else:
         raise ValueError('The dataset {} is not supported.'.format(args.dataset))
 
     processor.load_label(label_path)  # Adding label_to_id and id_to_label ot processor.
+    logger.info("label_to_id: {}".format(processor.label_to_id))
+    logger.info("id_to_label: {}".format(processor.id_to_label))
 
     n_class = len(processor.id_to_label)
     config = vars(args)  # 返回参数字典
@@ -153,7 +157,7 @@ def main(args):
                     # ------------------------- train D_g -------------------------#
                     # train on D_g real
                     id_sample = (y == 1.0)
-                    weight = torch.ones(len(id_sample)).to(device) - id_sample * 1.0
+                    weight = torch.ones(len(id_sample)).to(device) - id_sample * 1.0    # 除去id损失
                     real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
                     optimizer_D_g.zero_grad()
                     D_gen_real_discriminator_output, f_vector = D_g(real_feature)
@@ -177,7 +181,7 @@ def main(args):
                         z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                         fake_feature = G(z).detach()
                         D_gen_fake_discriminator_output, f_vector = D_g(fake_feature)
-                        g_D_g_loss = adversarial_loss(D_gen_fake_discriminator_output, valid_label)  # 生成器趋向真实样本
+                        g_D_g_loss = adversarial_loss(D_gen_fake_discriminator_output, valid_label)  # 生成器趋向真实样本, 假ood样本
                         g_D_g_loss.backward()
                         optimizer_G.step()
                         all_g_D_g_loss += g_D_g_loss.detach()
@@ -195,7 +199,7 @@ def main(args):
                 ood_fake_detect_discriminator_output, f_vector = D_detect(fake_feature)
                 ood_fake_detect_loss = adversarial_loss(ood_fake_detect_discriminator_output, fake_label)# 假样本趋向ood
 
-                D_detect_loss = args.beta * ood_real_detect_loss + (1 - args.beta) * ood_fake_detect_loss# 真实样本与假样本比例
+                D_detect_loss = args.beta * ood_real_detect_loss + (1 - args.beta) * ood_fake_detect_loss# 真实样本与假ood样本影响比例
                 D_detect_loss.backward()
                 optimizer_D_detect.step()
 
