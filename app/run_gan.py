@@ -23,7 +23,7 @@ from processor.smp_processor import SMPProcessor
 from model.dgan import Discriminator, Generator
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
 from utils import convert_to_int_by_threshold
-from utils.visualization import scatter_plot
+from utils.visualization import scatter_plot, my_plot_roc
 
 
 if torch.cuda.is_available():
@@ -463,6 +463,9 @@ def main(args):
         logger.info('test_ood_ind_recall: {}'.format(test_result['oos_ind_recall']))
         logger.info('test_ood_ind_f_score: {}'.format(test_result['oos_ind_f_score']))
         logger.info('test_auc: {}'.format(test_result['auc']))
+        my_plot_roc(test_result['all_binary_y'], test_result['y_score'],
+                    os.path.join(args.output_dir, 'roc_curve.png'))
+
 
         # 输出错误cases
         if config['dataset'] == 'oos-eval':
