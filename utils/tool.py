@@ -6,6 +6,7 @@
 import json
 import os
 import random
+from sklearn.metrics import roc_auc_score
 
 import numpy
 import pandas as pd
@@ -189,3 +190,6 @@ def mask_ood(p_tensor: torch.Tensor) -> torch.Tensor:
     print(p_tensor.shape)
     print(mask.shape)
     return p_tensor + mask
+
+def roc(y_true, y_scores):
+    return roc_auc_score(y_true, y_scores)

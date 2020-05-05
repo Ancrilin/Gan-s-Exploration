@@ -65,6 +65,19 @@ def plot_roc(labels: List[float], predict_probs: Dict[str, List[float]]):
     plt.xlabel('FPR')
     plt.show()
 
+def my_plot_roc(y_true, y_score, save_path):
+    false_positive_rate, true_positive_rate, thresholds = roc_curve(y_true, y_score)
+    roc_auc = auc(false_positive_rate, true_positive_rate)
+    plt.plot(false_positive_rate, true_positive_rate, label='AUC = {:0.4f}'.format(roc_auc))
+    plt.title('ROC')
+    plt.legend(loc='lower right')
+    plt.plot([0, 1], [0, 1], 'r--')
+    plt.ylabel('TPR')
+    plt.xlabel('FPR')
+    plt.savefig(save_path)
+    plt.show()
+
+
 
 if __name__ == '__main__':
     # feature = np.random.normal(size=(200, 300))

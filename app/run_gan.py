@@ -8,6 +8,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 from sklearn.manifold import TSNE
+from sklearn.metrics import roc_auc_score
 from torch.utils.data.dataloader import DataLoader
 from transformers import BertModel
 from transformers.optimization import AdamW
@@ -255,6 +256,7 @@ def main(args):
                 logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
                 logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
                 logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+                logger.info('valid_auc: {}'.format(eval_result['auc']))
 
         best_dev = -early_stopping.best_score
 
@@ -311,6 +313,8 @@ def main(args):
         result['oos_ind_precision'] = oos_ind_precision
         result['oos_ind_recall'] = oos_ind_recall
         result['oos_ind_f_score'] = oos_ind_fscore
+        result['y_score'] = y_score
+        result['auc'] = roc_auc_score(all_binary_y, y_score)
 
         return result
 
@@ -379,6 +383,8 @@ def main(args):
         result['oos_ind_precision'] = oos_ind_precision
         result['oos_ind_recall'] = oos_ind_recall
         result['oos_ind_f_score'] = oos_ind_fscore
+        result['y_score'] = y_score
+        result['auc'] = roc_auc_score(all_binary_y, y_score)
         if args.do_vis:
             all_features = torch.cat(all_features, 0).cpu().numpy()
             result['all_features'] = all_features
@@ -456,6 +462,7 @@ def main(args):
         logger.info('test_ood_ind_precision: {}'.format(test_result['oos_ind_precision']))
         logger.info('test_ood_ind_recall: {}'.format(test_result['oos_ind_recall']))
         logger.info('test_ood_ind_f_score: {}'.format(test_result['oos_ind_f_score']))
+        logger.info('test_auc: {}'.format(test_result['auc']))
 
         # 输出错误cases
         if config['dataset'] == 'oos-eval':
