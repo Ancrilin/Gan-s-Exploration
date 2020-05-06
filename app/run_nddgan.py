@@ -164,19 +164,21 @@ def main(args):
                 for gan_i in range(args.time):
                     # ------------------------- train D_g -------------------------#
                     # train on D_g real
-                    id_sample = (y == 1.0)
-                    weight = torch.ones(len(id_sample)).to(device) - id_sample * 1.0    # 除去id损失, 只用ood数据
+                    # id_sample = (y == 1.0)
+                    # weight = torch.ones(len(id_sample)).to(device) - id_sample * 1.0    # 除去id损失, 只用ood数据
+                    ood_sample = (y == 0.0)
+                    weight = torch.ones(len(ood_sample)).to(device) - ood_sample * 1.0 # 除去ood损失, 只用id数据
                     real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
                     optimizer_D_g.zero_grad()
                     D_gen_real_discriminator_output, f_vector = D_g(real_feature)
                     # D_gen_real_loss = adversarial_loss(D_gen_real_discriminator_output, valid_label) # 判别器对真实样本的损失
-                    D_gen_real_loss = real_loss_func(D_gen_real_discriminator_output, valid_label.squeeze())
+                    D_gen_real_loss = real_loss_func(D_gen_real_discriminator_output.squeeze(), valid_label.squeeze())
 
                     # train on D_g fake
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                     fake_feature = G(z).detach()
                     D_gen_fake_discriminator_output, f_vector = D_g(fake_feature)
-                    D_gen_fake_loss = adversarial_loss(D_gen_fake_discriminator_output, fake_label)  # 判别器对假样本的损失
+                    D_gen_fake_loss = adversarial_loss(D_gen_fake_discriminator_output.squeeze(), fake_label.squeeze())  # 判别器对假样本的损失
 
                     D_gen_loss = D_gen_real_loss + D_gen_fake_loss
                     D_gen_loss.backward(retain_graph=True)  # 保存计算图，生成器还要使用
@@ -189,7 +191,7 @@ def main(args):
                         z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                         fake_feature = G(z).detach()
                         D_gen_fake_discriminator_output, f_vector = D_g(fake_feature)
-                        g_D_g_loss = adversarial_loss(D_gen_fake_discriminator_output, valid_label)  # 生成器趋向真实样本, 假ood样本
+                        g_D_g_loss = adversarial_loss(D_gen_fake_discriminator_output.squeeze(), valid_label.squeeze())  # 生成器欺骗 D_g, 认为是真实样本
                         g_D_g_loss.backward()
                         optimizer_G.step()
                         all_g_D_g_loss += g_D_g_loss.detach()
@@ -199,15 +201,15 @@ def main(args):
                 # train on real(detect real sample)
                 optimizer_D_detect.zero_grad()
                 ood_real_detect_discriminator_output, f_vector = D_detect(real_feature)
-                ood_real_detect_loss = adversarial_loss(ood_real_detect_discriminator_output, (y != 0.0).float()) # ood_判别器的损失
+                ood_real_detect_loss = adversarial_loss(ood_real_detect_discriminator_output.squeeze(), (y != 0.0).float()) # ood 判别器对真实样本的损失
 
-                # train on fake(detect fake sample)
+                # train on fake(detect fake sample) fake sample is fake id -> ood
                 z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 ood_fake_detect_discriminator_output, f_vector = D_detect(fake_feature)
-                ood_fake_detect_loss = adversarial_loss(ood_fake_detect_discriminator_output, fake_label)# 假样本趋向ood
+                ood_fake_detect_loss = adversarial_loss(ood_fake_detect_discriminator_output.squeeze(), fake_label.squeeze())# 假id认为是ood样本
 
-                D_detect_loss = args.beta * ood_real_detect_loss + (1 - args.beta) * ood_fake_detect_loss# 真实样本与假ood样本影响比例
+                D_detect_loss = args.beta * ood_real_detect_loss + (1 - args.beta) * ood_fake_detect_loss# 真实样本与假id样本影响比例
                 D_detect_loss.backward()
                 optimizer_D_detect.step()
 
