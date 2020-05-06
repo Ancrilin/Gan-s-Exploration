@@ -24,7 +24,7 @@ from model.dgan import Discriminator, Generator
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
 from utils import convert_to_int_by_threshold
 from utils.visualization import scatter_plot, my_plot_roc
-from utils.tool import ErrorRateAt95Recall1
+from utils.tool import ErrorRateAt95Recall, save_result
 
 if torch.cuda.is_available():
     device = 'cuda:0'
@@ -258,7 +258,7 @@ def main(args):
                 logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
                 logger.info('valid_auc: {}'.format(eval_result['auc']))
                 logger.info(
-                    'valid_fpr95: {}'.format(ErrorRateAt95Recall1(eval_result['all_binary_y'], eval_result['y_score'])))
+                    'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
         best_dev = -early_stopping.best_score
 
@@ -448,7 +448,7 @@ def main(args):
         logger.info('eval_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
         logger.info('eval_auc: {}'.format(eval_result['auc']))
         logger.info(
-            'eval_fpr95: {}'.format(ErrorRateAt95Recall1(eval_result['all_binary_y'], eval_result['y_score'])))
+            'eval_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
@@ -468,9 +468,10 @@ def main(args):
         logger.info('test_ood_ind_recall: {}'.format(test_result['oos_ind_recall']))
         logger.info('test_ood_ind_f_score: {}'.format(test_result['oos_ind_f_score']))
         logger.info('test_auc: {}'.format(test_result['auc']))
-        logger.info('test_fpr95: {}'.format(ErrorRateAt95Recall1(test_result['all_binary_y'], test_result['y_score'])))
+        logger.info('test_fpr95: {}'.format(ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])))
         my_plot_roc(test_result['all_binary_y'], test_result['y_score'],
                     os.path.join(args.output_dir, 'roc_curve.png'))
+        save_result(os.path.join(args.output_dir, 'test_result'), test_result)
 
 
         # 输出错误cases
