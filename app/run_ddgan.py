@@ -24,6 +24,7 @@ from model.dgan import Discriminator, Generator
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
 from utils import convert_to_int_by_threshold
 from utils.visualization import scatter_plot, my_plot_roc
+from utils.tool import ErrorRateAt95Recall1
 
 
 if torch.cuda.is_available():
@@ -162,10 +163,10 @@ def main(args):
                 real_feature = pooled_output
 
                 for gan_i in range(args.time):
-                    # ------------------------- train D_g -------------------------#
+                    # ------------------------- train D_gen -------------------------#
                     # train on D_g real
                     id_sample = (y == 1.0)
-                    weight = torch.ones(len(id_sample)).to(device) - id_sample * 1.0    # 除去id损失
+                    weight = torch.ones(len(id_sample)).to(device) - id_sample * 1.0    # 除去id损失, 只用ood数据
                     real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
                     optimizer_D_g.zero_grad()
                     D_gen_real_discriminator_output, f_vector = D_g(real_feature)
@@ -189,11 +190,17 @@ def main(args):
                         z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                         fake_feature = G(z).detach()
                         D_gen_fake_discriminator_output, f_vector = D_g(fake_feature)
-                        g_D_g_loss = adversarial_loss(D_gen_fake_discriminator_output, valid_label)  # 生成器趋向真实样本, 假ood样本
-                        g_D_g_loss.backward()
+                        g_D_g_loss = adversarial_loss(D_gen_fake_discriminator_output, valid_label)  # 生成器生成假ood样本欺骗 D_g 认为是真ood样本
+
+                        z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                        fake_feature = G(z).detach()
+                        D_detect_fake_discriminator_output, f_vector = D_detect(fake_feature)
+                        g_D_detect_loss = adversarial_loss(D_detect_fake_discriminator_output, valid_label) # 生成器生成假ood样本欺骗 D_detect 为id样本
+                        g_loss = args.gamma * g_D_g_loss + (1 - args.gamma) * g_D_detect_loss # 权重, 两个 D 共同让 g 生成趋近真实 ood 样本
+                        g_loss.backward()
                         optimizer_G.step()
-                        all_g_D_g_loss += g_D_g_loss.detach()
-                        list_g_D_g_loss.append(g_D_g_loss)
+                        all_g_D_g_loss += g_loss.detach()
+                        list_g_D_g_loss.append(g_loss)
 
                 # ------------------------- train D_detect_ood -------------------------#
                 # train on real(detect real sample)
@@ -205,7 +212,7 @@ def main(args):
                 z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 ood_fake_detect_discriminator_output, f_vector = D_detect(fake_feature)
-                ood_fake_detect_loss = adversarial_loss(ood_fake_detect_discriminator_output, fake_label)# 假样本趋向ood
+                ood_fake_detect_loss = adversarial_loss(ood_fake_detect_discriminator_output, fake_label)# 生成器的假样本趋向ood
 
                 D_detect_loss = args.beta * ood_real_detect_loss + (1 - args.beta) * ood_fake_detect_loss# 真实样本与假ood样本影响比例
                 D_detect_loss.backward()
@@ -257,6 +264,8 @@ def main(args):
                 logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
                 logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
                 logger.info('valid_auc: {}'.format(eval_result['auc']))
+                logger.info(
+                    'valid_fpr95: {}'.format(ErrorRateAt95Recall1(eval_result['all_binary_y'], eval_result['y_score'])))
 
         best_dev = -early_stopping.best_score
 
@@ -444,6 +453,9 @@ def main(args):
         logger.info('eval_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
         logger.info('eval_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
         logger.info('eval_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+        logger.info('eval_auc: {}'.format(eval_result['auc']))
+        logger.info(
+            'eval_fpr95: {}'.format(ErrorRateAt95Recall1(eval_result['all_binary_y'], eval_result['y_score'])))
 
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
@@ -463,6 +475,7 @@ def main(args):
         logger.info('test_ood_ind_recall: {}'.format(test_result['oos_ind_recall']))
         logger.info('test_ood_ind_f_score: {}'.format(test_result['oos_ind_f_score']))
         logger.info('test_auc: {}'.format(test_result['auc']))
+        logger.info('test_fpr95: {}'.format(ErrorRateAt95Recall1(test_result['all_binary_y'], test_result['y_score'])))
         my_plot_roc(test_result['all_binary_y'], test_result['y_score'],
                     os.path.join(args.output_dir, 'roc_curve.png'))
 
@@ -552,6 +565,7 @@ if __name__ == '__main__':
     parser.add_argument('--D_g_lr', type=float, default=1e-5, help="Learning rate for Discriminator.")
     parser.add_argument('--G_lr', type=float, default=1e-5, help="Learning rate for Generator.")
     parser.add_argument('--beta', type=float, default=0.1, help="Weight of fake sample loss for Discriminator.")
+    parser.add_argument('--gamma', type=float, default=0.5)
 
     parser.add_argument('--bert_lr', type=float, default=2e-5, help="Learning rate for Generator.")
     parser.add_argument('--fine_tune', action='store_true',

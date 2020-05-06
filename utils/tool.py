@@ -193,3 +193,18 @@ def mask_ood(p_tensor: torch.Tensor) -> torch.Tensor:
 
 def roc(y_true, y_scores):
     return roc_auc_score(y_true, y_scores)
+
+def ErrorRateAt95Recall1(labels, scores):
+    recall_point = 0.95
+    labels = numpy.asarray(labels)
+    scores = numpy.asarray(scores)
+    # Sort label-score tuples by the score in descending order.
+    indices = numpy.argsort(scores)[::-1]    #降序排列
+    sorted_labels = labels[indices]
+    sorted_scores = scores[indices]
+    n_match = sum(sorted_labels)
+    n_thresh = recall_point * n_match
+    thresh_index = numpy.argmax(numpy.cumsum(sorted_labels) >= n_thresh)
+    FP = numpy.sum(sorted_labels[:thresh_index] == 0)
+    TN = numpy.sum(sorted_labels[thresh_index:] == 0)
+    return float(FP) / float(FP + TN)
