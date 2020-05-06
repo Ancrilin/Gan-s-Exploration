@@ -471,7 +471,7 @@ def main(args):
         logger.info('test_fpr95: {}'.format(ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])))
         my_plot_roc(test_result['all_binary_y'], test_result['y_score'],
                     os.path.join(args.output_dir, 'roc_curve.png'))
-        save_result(os.path.join(args.output_dir, 'test_result'), test_result)
+        save_result(test_result, os.path.join(args.output_dir, 'test_result'))
 
 
         # 输出错误cases
