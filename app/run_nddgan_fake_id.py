@@ -164,8 +164,6 @@ def main(args):
                 for gan_i in range(args.time):
                     # ------------------------- train D_g -------------------------#
                     # train on D_g real
-                    # id_sample = (y == 1.0)
-                    # weight = torch.ones(len(id_sample)).to(device) - id_sample * 1.0    # 除去id损失, 只用ood数据
                     ood_sample = (y == 0.0)
                     weight = torch.ones(len(ood_sample)).to(device) - ood_sample * 1.0 # 除去ood损失, 只用id数据
                     real_loss_func = torch.nn.BCELoss(weight=weight).to(device)

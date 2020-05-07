@@ -164,15 +164,14 @@ def main(args):
                 for gan_i in range(args.time):
                     # ------------------------- train D_g -------------------------#
                     # train on D_g real
-                    id_sample = (y == 1.0)
-                    weight = torch.ones(len(id_sample)).to(device) - id_sample * 1.0    # 除去id损失, 只用ood数据
-                    real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
+                    # id 和 ood 都进行
                     optimizer_D_g.zero_grad()
                     D_gen_real_discriminator_output, f_vector = D_g(real_feature)
-                    # D_gen_real_loss = adversarial_loss(D_gen_real_discriminator_output, valid_label) # 判别器对真实样本的损失
-                    D_gen_real_loss = real_loss_func(D_gen_real_discriminator_output.squeeze(), valid_label.squeeze())
+                    D_gen_real_loss = adversarial_loss(D_gen_real_discriminator_output.squeeze(), valid_label.squeeze()) # 判别器对真实样本的损失
+                    # D_gen_real_loss = real_loss_func(D_gen_real_discriminator_output.squeeze(), valid_label.squeeze())
 
                     # train on D_g fake
+                    # 包含 假 id 和 假 ood
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                     fake_feature = G(z).detach()
                     D_gen_fake_discriminator_output, f_vector = D_g(fake_feature)
@@ -205,9 +204,9 @@ def main(args):
                 z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 ood_fake_detect_discriminator_output, f_vector = D_detect(fake_feature)
-                ood_fake_detect_loss = adversarial_loss(ood_fake_detect_discriminator_output.squeeze(), fake_label.squeeze())# 假ood认为是ood样本
+                ood_fake_detect_loss = adversarial_loss(ood_fake_detect_discriminator_output.squeeze(), fake_label.squeeze())# 假 id 和 假 ood 都认为是ood
 
-                D_detect_loss = args.beta * ood_real_detect_loss + (1 - args.beta) * ood_fake_detect_loss# 真实样本与假ood样本影响比例
+                D_detect_loss = args.beta * ood_real_detect_loss + (1 - args.beta) * ood_fake_detect_loss# 真实样本与假样本影响比例
                 D_detect_loss.backward()
                 optimizer_D_detect.step()
 

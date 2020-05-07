@@ -214,9 +214,9 @@ def main(args):
                 z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 ood_fake_detect_discriminator_output, f_vector = D_detect(fake_feature)
-                ood_fake_detect_loss = adversarial_loss(ood_fake_detect_discriminator_output.squeeze(), fake_label.squeeze())# 生成器的假样本趋向ood
+                ood_fake_detect_loss = adversarial_loss(ood_fake_detect_discriminator_output.squeeze(), fake_label.squeeze())# 假id 认为是 ood
 
-                D_detect_loss = args.beta * ood_real_detect_loss + (1 - args.beta) * ood_fake_detect_loss# 真实样本与假ood样本影响比例
+                D_detect_loss = args.beta * ood_real_detect_loss + (1 - args.beta) * ood_fake_detect_loss# 真实样本与假id样本影响比例
                 D_detect_loss.backward()
                 optimizer_D_detect.step()
 
