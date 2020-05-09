@@ -215,7 +215,7 @@ def main(args):
                 out = pos(pos1, pos2, real_feature)
                 all_detection_preds.append(out)
 
-        all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
+        all_y = LongTensor(dataset.dataset[:, -3].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
         all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
@@ -283,7 +283,7 @@ def main(args):
                 out = pos(pos1, pos2, real_feature)
                 all_detection_preds.append(out)
 
-        all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
+        all_y = LongTensor(dataset.dataset[:, -3].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
         all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
