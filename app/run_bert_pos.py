@@ -98,7 +98,7 @@ def main(args):
     pos.to(device)
     E.to(device)
 
-    logger.info(('pos_dim: {}, feature_dim'.format(config['pos_dim'], config['feature_dim'])))
+    # logger.info(('pos_dim: {}, feature_dim'.format(config['pos_dim'], config['feature_dim'])))
 
     global_step = 0
 
@@ -141,7 +141,7 @@ def main(args):
                 sequence_output, pooled_output = E(token, mask, type_ids)
                 real_feature = pooled_output
 
-                logger.info(('size pos1: {}, pos2: {}, real_feature: {}'.format(pos1.size(), pos2.size(), real_feature.size())))
+                # logger.info(('size pos1: {}, pos2: {}, real_feature: {}'.format(pos1.size(), pos2.size(), real_feature.size())))
                 out = pos(pos1, pos2, real_feature)
 
                 loss = adversarial_loss(out, y.long())
