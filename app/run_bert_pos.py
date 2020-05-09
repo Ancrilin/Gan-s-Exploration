@@ -436,7 +436,7 @@ if __name__ == '__main__':
                         help='Batch size for evaluating and testing.')
 
     parser.add_argument('--pos_lr', type=float, default=2e-5)
-    parser.add_argument('--bert_lr', type=float, default=2e-5, help="Learning rate for Generator.")
+    parser.add_argument('--bert_lr', type=float, default=5e-5, help="Learning rate for Generator.")
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
     parser.add_argument('--seed', type=int, default=123, help='seed')

@@ -19,8 +19,8 @@ class PosOOSDataset(Dataset):
                 torch.tensor(mask_ids, dtype=torch.long),
                 torch.tensor(type_ids, dtype=torch.long),
                 torch.tensor(label_ids, dtype=torch.float32),
-                torch.tensor(pos1, dtype=torch.long),
-                torch.tensor(pos2, dtype=torch.long),
+                torch.tensor(pos1, dtype=torch.float),
+                torch.tensor(pos2, dtype=torch.float),
                 )
 
     def __len__(self) -> int:
