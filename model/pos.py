@@ -21,8 +21,8 @@ class Pos(nn.Module):
         )
 
     def forward(self, pos1, pos2, bert_feature):
-        out = self.model1(torch.cat([pos1, pos2], 0))
-        out = self.model2(torch.cat([out, bert_feature], 0))
+        out = self.model1(torch.cat([pos1, pos2], -1))
+        out = self.model2(torch.cat([out, bert_feature], -1))
         out = self.discriminator(out)
         return out
 
