@@ -74,11 +74,7 @@ class PosSMPProcessor(BertProcessor):
             #     cut_ids.append(label)
             label = (1 if label == 2 else 2)
         if len(cut_ids) < maxlen:
-            cut_ids.append([cut_ids[-1][1], maxlen])
             cut_ids += [[0, 0]] * (maxlen - len(cut_ids))
-        else:
-            cut_ids[-1][1] = cut_ids[-1][maxlen]
-            cut_ids = cut_ids[:32]
         tags = []
         for word, tag in pseg.lcut(text, use_paddle=True):
             if tag not in self.pos:

@@ -37,6 +37,8 @@ class Pos_emb(nn.Module):
         for i in range(self.config['batch_size']):
             for index, j in enumerate(pos1[i]):
                 if j[1] == 0:
+                    for m in range(pos1[i][index - 1][1], self.config['maxlen']):
+                        final[i][m] = self.embedding[torch.tensor([0])]             # padding
                     break
                 for k in range(j[0].numpy(), j[1].numpy()):
                     final[i][k] = embed[i][index]
