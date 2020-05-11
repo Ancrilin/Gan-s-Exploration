@@ -86,12 +86,13 @@ def main(args):
     from model.pos import Pos
     from model.pos_emb import Pos_emb
     E = BertModel.from_pretrained(bert_config['PreTrainModelDir'])  # Bert encoder
-    config['pos_dim'] = processor.maxlen
+    config['pos_dim'] = 300
     config['batch_size'] = args.train_batch_size
     config['n_pos'] = len(processor.pos)
     config['device'] = device
     config['nhead'] = 4
     config['num_layers'] = 4
+    config['maxlen'] = processor.maxlen
     pos = Pos_emb(config)
 
     if args.fine_tune:
