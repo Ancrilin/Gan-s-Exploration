@@ -69,13 +69,16 @@ class PosSMPProcessor(BertProcessor):
         tok = jieba.tokenize(text)
         label = 1
         for tk in tok:
-            for i in range(tk[1], tk[2]):
-                cut_ids.append(label)
+            cut_ids.append([tk[1], tk[2]])
+            # for i in range(tk[1], tk[2]):
+            #     cut_ids.append(label)
             label = (1 if label == 2 else 2)
         if len(cut_ids) < maxlen:
-            cut_ids += ([0] * (maxlen - len(cut_ids)))
+            cut_ids.append([cut_ids[-1][1], maxlen])
+            cut_ids += [[0, 0]] * (maxlen - len(cut_ids))
         else:
-            cut_ids = cut_ids[:maxlen]
+            cut_ids[-1][1] = cut_ids[-1][maxlen]
+            cut_ids = cut_ids[:32]
         tags = []
         for word, tag in pseg.lcut(text, use_paddle=True):
             if tag not in self.pos:
@@ -85,7 +88,8 @@ class PosSMPProcessor(BertProcessor):
             tags += ([0] * (maxlen - len(tags)))
         else:
             tags = tags[:maxlen]
-        return [cut_ids, tags]
+        pos_mask = [1] * len(text) + [0] * (maxlen - len(text))
+        return [cut_ids, tags, pos_mask]
 
     def parse_text(self, text) -> (list, list, list):
         """

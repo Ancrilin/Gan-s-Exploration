@@ -133,7 +133,7 @@ def main(args):
             total_loss = 0
             for sample in tqdm(train_dataloader):
                 sample = (i.to(device) for i in sample)
-                token, mask, type_ids, y, pos1, pos2 = sample
+                token, mask, type_ids, pos1, pos2, pos_mask, y = sample
                 batch = len(token)
 
                 optimizer_E.zero_grad()
@@ -203,7 +203,7 @@ def main(args):
 
         for sample in tqdm(dev_dataloader):
             sample = (i.to(device) for i in sample)
-            token, mask, type_ids, y, pos1, pos2 = sample
+            token, mask, type_ids, pos1, pos2, pos_mask, y = sample
             batch = len(token)
 
             # -------------------------evaluate D------------------------- #
@@ -215,7 +215,7 @@ def main(args):
                 out = pos(pos1, pos2, real_feature)
                 all_detection_preds.append(out)
 
-        all_y = LongTensor(dataset.dataset[:, -3].astype(int)).cpu()  # [length, n_class]
+        all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
         all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
@@ -270,7 +270,7 @@ def main(args):
 
         for sample in tqdm(test_dataloader):
             sample = (i.to(device) for i in sample)
-            token, mask, type_ids, y, pos1, pos2 = sample
+            token, mask, type_ids, pos1, pos2, pos_mask, y = sample
             batch = len(token)
 
             # -------------------------evaluate D------------------------- #
@@ -283,7 +283,7 @@ def main(args):
                 out = pos(pos1, pos2, real_feature)
                 all_detection_preds.append(out)
 
-        all_y = LongTensor(dataset.dataset[:, -3].astype(int)).cpu()  # [length, n_class]
+        all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
         all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
