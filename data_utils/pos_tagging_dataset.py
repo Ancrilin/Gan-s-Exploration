@@ -18,8 +18,8 @@ class PosOOSDataset(Dataset):
         return (torch.tensor(token_ids, dtype=torch.long),
                 torch.tensor(mask_ids, dtype=torch.long),
                 torch.tensor(type_ids, dtype=torch.long),
-                torch.tensor(pos1, dtype=torch.int),
-                torch.tensor(pos2, dtype=torch.int),
+                torch.tensor(pos1),
+                torch.tensor(pos2),
                 torch.tensor(pos_mask),
                 torch.tensor(label_ids, dtype=torch.float32),
                 )
