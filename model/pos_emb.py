@@ -32,6 +32,7 @@ class Pos_emb(nn.Module):
 
     def get_embedding(self, pos1, pos2):
         embed = self.embedding(pos2)
+        print(self.config['device'])
         # print('pos1', pos1.size(), 'pos2', pos2.size())
         # print(embed.size(), self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).size())
         # embed = torch.add(embed.cpu(), self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
