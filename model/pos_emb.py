@@ -32,7 +32,7 @@ class Pos_emb(nn.Module):
 
     def get_embedding(self, pos1, pos2):
         embed = self.embedding(pos2)
-        embed = torch.add(embed, self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
+        embed = torch.add(embed.cpu(), self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
         final = torch.rand(self.config['batch_size'], self.config['maxlen'], self.config['pos_dim'])
         for i in range(self.config['batch_size']):
             for index, j in enumerate(pos1[i]):
@@ -52,6 +52,6 @@ class Pos_emb(nn.Module):
             [[pos / (10000.0 ** (i // 2 * 2.0 / embed)) for i in range(embed)] for pos in range(pad_size)])
         pe[:, 0::2] = np.sin(pe[:, 0::2])
         pe[:, 1::2] = np.cos(pe[:, 1::2])
-        return pe.to(self.config['device'])
+        return pe
 
 
