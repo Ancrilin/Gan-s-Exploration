@@ -86,6 +86,9 @@ def main(args):
     from model.pos import Pos
     E = BertModel.from_pretrained(bert_config['PreTrainModelDir'])  # Bert encoder
     config['pos_dim'] = processor.maxlen
+    config['batch_size'] = args.train_batch_size
+    config['n_pos'] = len(processor.pos)
+    config['device'] = device
     pos = Pos(config)
 
     if args.fine_tune:
