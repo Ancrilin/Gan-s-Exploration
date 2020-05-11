@@ -28,6 +28,9 @@ from utils.visualization import scatter_plot, my_plot_roc
 from utils.tool import ErrorRateAt95Recall, save_result
 
 
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+
+
 if torch.cuda.is_available():
     device = 'cuda:0'
     FloatTensor = torch.cuda.FloatTensor
