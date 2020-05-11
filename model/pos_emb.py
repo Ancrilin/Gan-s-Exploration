@@ -9,7 +9,7 @@ class Pos_emb(nn.Module):
     def __init__(self, config):
         super(Pos_emb, self).__init__()
         self.config = config
-        self.embedding = nn.Embedding(config['n_pos'], config['pos_dim'], padding_idx=0)
+        self.embedding = nn.Embedding(config['n_pos'] + 1, config['pos_dim'], padding_idx=0)
         # self.w = nn.Parameter(torch.Tensor(config[hidden_size * 2))
         self.model = nn.Sequential(
             nn.Linear(config['pos_dim'], config['feature_dim'], bias=False),
@@ -34,7 +34,7 @@ class Pos_emb(nn.Module):
         embed = self.embedding(pos2)
         print('pos1', pos1.size(), 'pos2', pos2.size())
         print(embed.size(), self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).size())
-        embed = torch.add(embed.cpu(), self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
+        embed = torch.add(embed, self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
         final = torch.rand(self.config['batch_size'], self.config['maxlen'], self.config['pos_dim'])
         for i in range(self.config['batch_size']):
             for index, j in enumerate(pos1[i]):
