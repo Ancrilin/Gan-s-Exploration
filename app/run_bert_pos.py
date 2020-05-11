@@ -84,12 +84,13 @@ def main(args):
     logger.info(config)
 
     from model.pos import Pos
+    from model.pos_emb import Pos_emb
     E = BertModel.from_pretrained(bert_config['PreTrainModelDir'])  # Bert encoder
     config['pos_dim'] = processor.maxlen
     config['batch_size'] = args.train_batch_size
     config['n_pos'] = len(processor.pos)
     config['device'] = device
-    pos = Pos(config)
+    pos = Pos_emb(config)
 
     if args.fine_tune:
         for param in E.parameters():
