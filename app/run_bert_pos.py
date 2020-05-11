@@ -90,6 +90,8 @@ def main(args):
     config['batch_size'] = args.train_batch_size
     config['n_pos'] = len(processor.pos)
     config['device'] = device
+    config['nhead'] = 4
+    config['num_layers'] = 4
     pos = Pos_emb(config)
 
     if args.fine_tune:
