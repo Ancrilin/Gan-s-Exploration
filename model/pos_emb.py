@@ -9,10 +9,10 @@ class Pos_emb(nn.Module):
     def __init__(self, config):
         super(Pos_emb, self).__init__()
         self.config = config
-        self.embedding = nn.Embedding(config['n_pos'], config['embed'], padding_idx=0)
+        self.embedding = nn.Embedding(config['n_pos'], config['pos_dim'], padding_idx=0)
         # self.w = nn.Parameter(torch.Tensor(config[hidden_size * 2))
         self.model = nn.Sequential(
-            nn.Linear(config['pos_dim'] + 1, config['feature_dim'], bias=False),
+            nn.Linear(config['pos_dim'], config['feature_dim'], bias=False),
             nn.Tanh(),
         )
 
@@ -20,7 +20,7 @@ class Pos_emb(nn.Module):
             nn.Linear(2 * config['feature_dim'], 1),
             nn.Sigmoid()
         )
-        self.encoder_layer = nn.TransformerEncoderLayer(d_model=config['embed'], nhead=config['nhead'])
+        self.encoder_layer = nn.TransformerEncoderLayer(d_model=config['pos_dim'], nhead=config['nhead'])
         self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=config['num_layers'])
 
     def forward(self, pos1, pos2, bert_feature):
@@ -32,8 +32,8 @@ class Pos_emb(nn.Module):
 
     def get_embedding(self, pos1, pos2):
         embed = self.embedding(pos2)
-        embed = torch.add(embed, self.pos_embedding(self.config['embed'], self.config['maxlen']))
-        final = torch.rand(self.config['batch_size'], self.config['maxlen'], self.config['embed'])
+        embed = torch.add(embed, self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
+        final = torch.rand(self.config['batch_size'], self.config['maxlen'], self.config['pos_dim'])
         for i in range(self.config['batch_size']):
             for index, j in enumerate(pos1[i]):
                 if j[1] == 0:
