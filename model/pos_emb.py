@@ -32,6 +32,7 @@ class Pos_emb(nn.Module):
 
     def get_embedding(self, pos1, pos2):
         embed = self.embedding(pos2)
+        print(embed.size(), self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).size())
         embed = torch.add(embed.cpu(), self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
         final = torch.rand(self.config['batch_size'], self.config['maxlen'], self.config['pos_dim'])
         for i in range(self.config['batch_size']):
