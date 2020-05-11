@@ -34,7 +34,8 @@ class Pos_emb(nn.Module):
         embed = self.embedding(pos2)
         # print('pos1', pos1.size(), 'pos2', pos2.size())
         # print(embed.size(), self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).size())
-        embed = torch.add(embed.cpu(), self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
+        # embed = torch.add(embed.cpu(), self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
+        embedding = embed + self.pos_embedding(self.config['pos_dim'], self.config['maxlen'])
         final = torch.rand(self.config['batch_size'], self.config['maxlen'], self.config['pos_dim'])
         for i in range(self.config['batch_size']):
             for index, j in enumerate(pos1[i]):
@@ -43,7 +44,7 @@ class Pos_emb(nn.Module):
                         final[i][m] = self.embedding[torch.tensor([0])]             # padding
                     break
                 for k in range(j[0].numpy(), j[1].numpy()):
-                    final[i][k] = embed[i][index]
+                    final[i][k] = embedding[i][index]
         cls = self.embedding(torch.tensor([1]))
         cls = cls.repeat(self.config['batch_size'], 1, 1)
         final = torch.cat((cls, final), dim=1)
