@@ -52,6 +52,6 @@ class Pos_emb(nn.Module):
             [[pos / (10000.0 ** (i // 2 * 2.0 / embed)) for i in range(embed)] for pos in range(pad_size)])
         pe[:, 0::2] = np.sin(pe[:, 0::2])
         pe[:, 1::2] = np.cos(pe[:, 1::2])
-        return pe
+        return pe.to(self.config['device'])
 
 
