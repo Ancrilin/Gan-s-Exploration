@@ -88,6 +88,9 @@ class PosSMPProcessor(BertProcessor):
         else:
             tags = tags[:maxlen]
         pos_mask = [1] * len(text) + [0] * (maxlen - len(text))
+        cut_ids = cut_ids[:32]
+        tags = tags[:32]
+        pos_mask = pos_mask[:32]
         return [cut_ids, tags, pos_mask]
 
     def parse_text(self, text) -> (list, list, list):

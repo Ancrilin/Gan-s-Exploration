@@ -42,8 +42,8 @@ class Pos_emb(nn.Module):
         # print('embed', embed, embed.size(), 'pos_emb',
         #       self.pos_embedding(self.config['pos_dim'], self.config['maxlen']),
         #       self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).size())
-        embedding = torch.add(embed, self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
-        # embedding = embed + self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).to(self.config['device'])
+        # embedding = torch.add(embed, self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
+        embedding = embed + self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).to(self.config['device'])
         final = torch.rand(self.config['batch_size'], self.config['maxlen'], self.config['pos_dim']).to(self.config['device'])
         for i in range(self.config['batch_size']):
             for index, j in enumerate(pos1[i]):
