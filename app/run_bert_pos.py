@@ -90,11 +90,11 @@ def main(args):
     from model.pos import Pos
     from model.pos_emb import Pos_emb
     E = BertModel.from_pretrained(bert_config['PreTrainModelDir'])  # Bert encoder
-    config['pos_dim'] = 300
+    config['pos_dim'] = args.pos_dim
     config['batch_size'] = args.train_batch_size
     config['n_pos'] = len(processor.pos)
     config['device'] = device
-    config['nhead'] = 4
+    config['nhead'] = 2
     config['num_layers'] = 2
     config['maxlen'] = processor.maxlen
     print(processor.pos)
@@ -451,6 +451,7 @@ if __name__ == '__main__':
                         help='Batch size for evaluating and testing.')
 
     parser.add_argument('--pos_lr', type=float, default=2e-5)
+    parser.add_argument('--pos_dim', type=int)
     parser.add_argument('--bert_lr', type=float, default=5e-5, help="Learning rate for Generator.")
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
