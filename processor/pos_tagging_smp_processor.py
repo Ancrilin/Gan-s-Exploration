@@ -51,7 +51,10 @@ class PosSMPProcessor(BertProcessor):
 
     def load_pos(self, path):
         with open(path, 'r', encoding='utf-8') as fp:
-            self.pos = json.load(fp)
+            t_pos = json.load(fp)
+        for key in t_pos:
+            if key not in self.pos:
+                self.pos[key] = len(self.pos)
 
     def parse_line(self, line: list) -> list:
         """

@@ -74,6 +74,7 @@ def main(args):
         raise ValueError('The dataset {} is not supported.'.format(args.dataset))
 
     processor.load_label(label_path)  # Adding label_to_id and id_to_label ot processor.
+    processor.load_pos('data/pos.json')
     logger.info("label_to_id: {}".format(processor.label_to_id))
     logger.info("id_to_label: {}".format(processor.id_to_label))
 
@@ -96,6 +97,7 @@ def main(args):
     config['nhead'] = 4
     config['num_layers'] = 4
     config['maxlen'] = processor.maxlen
+    print(processor.pos)
     pos = Pos_emb(config)
 
     if args.fine_tune:
