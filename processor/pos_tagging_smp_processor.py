@@ -72,6 +72,10 @@ class PosSMPProcessor(BertProcessor):
         tok = jieba.tokenize(text)
         label = 1
         for tk in tok:
+            if tk[2] > maxlen:
+                tk[2] = maxlen
+                cut_ids.append([tk[1], tk[2]])
+                break
             cut_ids.append([tk[1], tk[2]])
             # for i in range(tk[1], tk[2]):
             #     cut_ids.append(label)
