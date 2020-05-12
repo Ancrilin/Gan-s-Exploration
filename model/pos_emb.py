@@ -46,20 +46,28 @@ class Pos_emb(nn.Module):
         # embedding = torch.add(embed, self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
         embedding = embed + self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).to(self.config['device'])
         final = torch.rand(len(pos1), self.config['maxlen'], self.config['pos_dim']).to(self.config['device'])
-        try:
-            for i in range(len(pos1)):
-                for index, j in enumerate(pos1[i]):
-                    if j[1] == 0:
-                        for m in range(pos1[i][index - 1][1], self.config['maxlen']):
-                            final[i][m] = self.embedding(torch.LongTensor([0]))  # padding
-                        break
-                    for k in range(j[0].numpy(), j[1].numpy()):
-                        final[i][k] = embedding[i][index]
-        except Exception as e:
-            print(e.args)
-            print(traceback.format_exc())
-            print('pos1', pos1, pos1.size(), 'pos2', pos2, pos2.size())
-            print('final', final, final.size())
+        # try:
+        #     for i in range(len(pos1)):
+        #         for index, j in enumerate(pos1[i]):
+        #             if j[1] == 0:
+        #                 for m in range(pos1[i][index - 1][1], self.config['maxlen']):
+        #                     final[i][m] = self.embedding(torch.LongTensor([0]))  # padding
+        #                 break
+        #             for k in range(j[0].numpy(), j[1].numpy()):
+        #                 final[i][k] = embedding[i][index]
+        # except Exception as e:
+        #     print(e.args)
+        #     print(traceback.format_exc())
+        #     print('pos1', pos1, pos1.size(), 'pos2', pos2, pos2.size())
+        #     print('final', final, final.size())
+        for i in range(len(pos1)):
+            for index, j in enumerate(pos1[i]):
+                if j[1] == 0:
+                    for m in range(pos1[i][index - 1][1], self.config['maxlen']):
+                        final[i][m] = self.embedding(torch.LongTensor([0]))  # padding
+                    break
+                for k in range(j[0].numpy(), j[1].numpy()):
+                    final[i][k] = embedding[i][index]
         cls = self.embedding(torch.LongTensor([1]))
         cls = cls.repeat(len(pos1), 1, 1)
         # print('cls', cls.size())
