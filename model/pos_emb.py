@@ -15,12 +15,10 @@ class Pos_emb(nn.Module):
         super(Pos_emb, self).__init__()
         self.config = config
         self.embedding = nn.Embedding(config['n_pos'], config['pos_dim'], padding_idx=0)
-        # self.w = nn.Parameter(torch.Tensor(config[hidden_size * 2))
         self.model = nn.Sequential(
-            nn.Linear(config['pos_dim'], config['feature_dim'], bias=False),
+            nn.Linear(config['pos_dim'], config['pos_dim'], bias=False),
             nn.Tanh(),
         )
-
         self.discriminator = nn.Sequential(
             nn.Linear(config['feature_dim'] + config['pos_dim'], 1),
             nn.Sigmoid()
