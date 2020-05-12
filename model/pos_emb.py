@@ -35,9 +35,9 @@ class Pos_emb(nn.Module):
         return out
 
     def get_embedding(self, pos1, pos2):
+        print('config', self.config)
         print('pos1', pos1, pos1.size(), 'pos2', pos2, pos2.size())
         embed = self.embedding(pos2)
-        print('config', self.config)
         print(self.config['device'])
         print('embed', embed, embed.size(), 'pos_emb',
               self.pos_embedding(self.config['pos_dim'], self.config['maxlen']),
