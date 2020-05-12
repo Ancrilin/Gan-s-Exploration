@@ -52,8 +52,9 @@ class Pos_emb(nn.Module):
                     for m in range(pos1[i][index - 1][1], self.config['maxlen']):
                         final[i][m] = self.embedding(torch.LongTensor([0]))  # padding
                     break
-                print(j, type(j), index, type(index))
+                print('j', j, type(j), 'index', index, type(index))
                 tj = j.data.cpu().numpy
+                print('tj', tj, type(tj))
                 left = tj[0]
                 right = tj[1]
                 print('left', type(left), left)
