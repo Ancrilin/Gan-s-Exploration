@@ -53,11 +53,11 @@ class Pos_emb(nn.Module):
                     break
                 for k in range(j[0].numpy(), j[1].numpy()):
                     final[i][k] = embedding[i][index]
-        cls = self.embedding(torch.tensor([1]))
+        cls = self.embedding(torch.LongTensor([1]))
         cls = cls.repeat(len(pos1), 1, 1)
-        print('cls', cls.size())
-        final = torch.cat((cls, final), dim=1)
-        print('final', final.size())
+        # print('cls', cls.size())
+        # final = torch.cat((cls, final), dim=1)
+        # print('final', final.size())
         return final.to(self.config['device'])
 
     def pos_embedding(self, embed, pad_size):
