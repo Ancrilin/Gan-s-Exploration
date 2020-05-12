@@ -44,7 +44,7 @@ class Pos_emb(nn.Module):
         #       self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).size())
         # embedding = torch.add(embed, self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
         embedding = embed + self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).to(self.config['device'])
-        final = torch.rand(self.config['batch_size'], self.config['maxlen'], self.config['pos_dim']).to(self.config['device'])
+        final = torch.rand(len(pos1), self.config['maxlen'], self.config['pos_dim']).to(self.config['device'])
         for i in range(len(pos1)):
             for index, j in enumerate(pos1[i]):
                 if j[1] == 0:
@@ -55,7 +55,9 @@ class Pos_emb(nn.Module):
                     final[i][k] = embedding[i][index]
         cls = self.embedding(torch.tensor([1]))
         cls = cls.repeat(len(pos1), 1, 1)
+        print('cls', cls.size())
         final = torch.cat((cls, final), dim=1)
+        print('final', final.size())
         return final.to(self.config['device'])
 
     def pos_embedding(self, embed, pad_size):
