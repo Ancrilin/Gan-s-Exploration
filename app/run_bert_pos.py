@@ -96,6 +96,7 @@ def main(args):
     config['nhead'] = 4
     config['num_layers'] = 4
     config['maxlen'] = processor.maxlen
+    print('config', config)
     pos = Pos_emb(config)
 
     if args.fine_tune:
