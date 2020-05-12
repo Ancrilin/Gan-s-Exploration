@@ -22,7 +22,7 @@ class Pos_emb(nn.Module):
         )
 
         self.discriminator = nn.Sequential(
-            nn.Linear(2 * config['feature_dim'], 1),
+            nn.Linear(config['feature_dim'] + config['pos_dim'], 1),
             nn.Sigmoid()
         )
         self.encoder_layer = nn.TransformerEncoderLayer(d_model=config['pos_dim'], nhead=config['nhead'])
