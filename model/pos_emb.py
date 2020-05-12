@@ -54,8 +54,8 @@ class Pos_emb(nn.Module):
                     break
                 print(j, type(j), index, type(index))
                 tj = j.data.cpu().numpy
-                left = tj[0].data.cpu().numpy()
-                right = tj[1].data.cpu().numpy()
+                left = tj[0]
+                right = tj[1]
                 print('left', type(left), left)
                 print('right', type(right), right)
                 for k in range(left, right):
