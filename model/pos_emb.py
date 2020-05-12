@@ -3,6 +3,10 @@ import torch.nn as nn
 from transformers import BertModel
 from configparser import SectionProxy
 import numpy as np
+import os
+
+
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 
 class Pos_emb(nn.Module):
@@ -32,9 +36,12 @@ class Pos_emb(nn.Module):
 
     def get_embedding(self, pos1, pos2):
         embed = self.embedding(pos2)
+        print('config', self.config)
         print(self.config['device'])
-        print('pos1', pos1.size(), 'pos2', pos2.size())
-        print(embed.size(), self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).size())
+        print('pos1', pos1, pos1.size(), 'pos2', pos2, pos2.size())
+        print('embed', embed, embed.size(), 'pos_emb',
+              self.pos_embedding(self.config['pos_dim'], self.config['maxlen']),
+              self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).size())
         # embed = torch.add(embed.cpu(), self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
         embedding = embed + self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).to(self.config['device'])
         final = torch.rand(self.config['batch_size'], self.config['maxlen'], self.config['pos_dim']).to(self.config['device'])
