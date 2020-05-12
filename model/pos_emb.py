@@ -55,11 +55,11 @@ class Pos_emb(nn.Module):
                 # print('j', j, type(j), 'index', index, type(index))
                 tj = j.data
                 print('tj', tj, type(tj))
-                # left = tj[0]
-                # right = tj[1]
-                # print('left', type(left), left)
-                # print('right', type(right), right)
-                for k in range(tj[0].cpu().numpy(), tj[0].cpu().numpy()):
+                left = tj[0]
+                right = tj[1]
+                print('left', type(left), left)
+                print('right', type(right), right)
+                for k in range(right.cpu().numpy(), left.cpu().numpy()):
                     final[i][k] = embedding[i][index]
         cls = self.embedding(torch.LongTensor([1]))
         cls = cls.repeat(len(pos1), 1, 1)
