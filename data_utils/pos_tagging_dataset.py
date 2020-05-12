@@ -19,7 +19,7 @@ class PosOOSDataset(Dataset):
                 torch.tensor(mask_ids, dtype=torch.long),
                 torch.tensor(type_ids, dtype=torch.long),
                 torch.tensor(pos1),
-                torch.tensor(pos2),
+                torch.tensor(pos2, dtype=torch.long),
                 torch.tensor(pos_mask),
                 torch.tensor(label_ids, dtype=torch.float32),
                 )
