@@ -4,6 +4,7 @@ from transformers import BertModel
 from configparser import SectionProxy
 import numpy as np
 import os
+import traceback
 
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
@@ -54,7 +55,9 @@ class Pos_emb(nn.Module):
                         break
                     for k in range(j[0].numpy(), j[1].numpy()):
                         final[i][k] = embedding[i][index]
-        except:
+        except Exception as e:
+            print(e.args)
+            print(traceback.format_exc())
             print('pos1', pos1, pos1.size(), 'pos2', pos2, pos2.size())
             print('final', final, final.size())
         cls = self.embedding(torch.LongTensor([1]))
