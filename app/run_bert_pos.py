@@ -156,8 +156,8 @@ def main(args):
 
                 # logger.info(('size pos1: {}, pos2: {}, real_feature: {}'.format(pos1.size(), pos2.size(), real_feature.size())))
                 out = pos(pos1, pos2, real_feature)
-                print('out', out)
-                print('y', y)
+                # print('out', out)
+                # print('y', y)
                 loss = adversarial_loss(out, y.float())
                 loss.backward()
                 total_loss += loss.detach()
