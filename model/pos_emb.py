@@ -25,7 +25,6 @@ class Pos_emb(nn.Module):
         pos = self.get_embedding(pos1, pos2)
         pos_feature = self.transformer_encoder(pos)[:, 0]
         out = self.discriminator(torch.cat((bert_feature, pos_feature), dim=-1))
-        out = self.discriminator(out)
         return out
 
     def get_embedding(self, pos1, pos2):
