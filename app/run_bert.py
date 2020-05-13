@@ -116,6 +116,7 @@ def main(args):
                 batch = len(token)
 
                 logits = model(token, mask, type_ids)
+                print(logits.size())
                 loss = classified_loss(logits, y.long())
                 total_loss += loss.item()
                 loss = loss / args.gradient_accumulation_steps

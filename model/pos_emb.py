@@ -17,7 +17,7 @@ class Pos_emb(nn.Module):
         self.embedding = nn.Embedding(config['n_pos'], config['pos_dim'], padding_idx=0)
         self.model = nn.Sequential(
             nn.Linear(config['feature_dim'] + config['pos_dim'], config['feature_dim'] + config['pos_dim']),
-            nn.ReLU()
+            nn.Sigmoid()
         )
         self.discriminator = nn.Sequential(
             nn.Linear(config['feature_dim'] + config['pos_dim'], 1),
@@ -28,12 +28,11 @@ class Pos_emb(nn.Module):
         self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=config['num_layers'])
 
     def forward(self, pos1, pos2, bert_feature):
-        # pos = self.get_embedding(pos1, pos2)
-        # pos_feature = self.transformer_encoder(pos)[:, 0]
-        # out = self.model(torch.cat((bert_feature, pos_feature), dim=-1))
-        # out = self.discriminator(out)
-        out = self.bert_out(bert_feature)
-        # out = nn.functional.sigmoid(out)
+        pos = self.get_embedding(pos1, pos2)
+        pos_feature = self.transformer_encoder(pos)[:, 0]
+        out = self.model(torch.cat((bert_feature, pos_feature), dim=-1))
+        out = self.discriminator(out)
+        # out = self.bert_out(bert_feature)
         return out
 
     def get_embedding(self, pos1, pos2):
