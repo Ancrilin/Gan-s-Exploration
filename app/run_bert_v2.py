@@ -231,6 +231,9 @@ def main(args):
             all_detection_binary_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
+        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        result['detection_loss'] = detection_loss
+
         eer = metrics.cal_eer(all_binary_y, y_score)
 
         result['eer'] = eer
@@ -295,6 +298,9 @@ def main(args):
         oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(
             all_detection_binary_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
+
+        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        result['detection_loss'] = detection_loss
 
         eer = metrics.cal_eer(all_binary_y, y_score)
 
