@@ -46,7 +46,7 @@ def check_args(args):
 
 def main(args):
     logger.info('Checking...')
-    check_manual_seed(SEED)
+    check_manual_seed(args.seed)
     check_args(args)
 
     logger.info('Loading config...')
@@ -375,6 +375,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--lr', type=float, default=4e-5,
                         help="Learning rate for Discriminator.")
+
+    parser.add_argument('--seed', default=123, type=int)
 
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
