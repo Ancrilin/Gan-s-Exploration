@@ -149,7 +149,6 @@ def main(args):
                 eval_result = eval(dev_dataset)
 
                 valid_loss.append(eval_result['loss'])
-                valid_ind_class_acc.append(eval_result['ind_class_acc'])
 
                 valid_detection_loss.append(eval_result['detection_loss'])
                 valid_oos_ind_precision.append(eval_result['oos_ind_precision'])
@@ -223,7 +222,6 @@ def main(args):
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
         all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
 
-        ind_class_acc = metrics.ind_class_accuracy(all_pred, all_y)
         report = metrics.classification_report(all_y, all_pred, output_dict=True)
         result.update(report)
         y_score = all_detection_preds.squeeze().tolist()
@@ -236,7 +234,6 @@ def main(args):
         eer = metrics.cal_eer(all_binary_y, y_score)
 
         result['eer'] = eer
-        result['ind_class_acc'] = ind_class_acc
         result['loss'] = total_loss / n_sample
 
         freeze_data['valid_all_y'] = all_y
@@ -290,7 +287,6 @@ def main(args):
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
         all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
 
-        ind_class_acc = metrics.ind_class_accuracy(all_pred, all_y)
         report = metrics.classification_report(all_y, all_pred, output_dict=True)
         result.update(report)
         y_score = all_detection_preds.squeeze().tolist()
@@ -303,7 +299,6 @@ def main(args):
         eer = metrics.cal_eer(all_binary_y, y_score)
 
         result['eer'] = eer
-        result['ind_class_acc'] = ind_class_acc
         result['loss'] = total_loss / n_sample
 
         result['all_detection_binary_preds'] = all_detection_binary_preds
