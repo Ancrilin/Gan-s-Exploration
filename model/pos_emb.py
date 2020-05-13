@@ -17,6 +17,7 @@ class Pos_emb(nn.Module):
         self.embedding = nn.Embedding(config['n_pos'], config['pos_dim'], padding_idx=0)
         self.discriminator = nn.Sequential(
             nn.Linear(config['feature_dim'] + config['pos_dim'], 1),
+            nn.Sigmoid()
         )
         self.encoder_layer = nn.TransformerEncoderLayer(d_model=config['pos_dim'], nhead=config['nhead'])
         self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=config['num_layers'])
