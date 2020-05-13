@@ -56,7 +56,7 @@ class Pos_emb(nn.Module):
         cls = cls.repeat(len(pos1), 1, 1)
         # print('cls', cls.size())
         final = torch.cat((cls, final), dim=1)
-        # print('final', final.size())
+        print('final', final.size())
         return final.to(self.config['device'])
 
     def pos_embedding(self, embed, pad_size):
