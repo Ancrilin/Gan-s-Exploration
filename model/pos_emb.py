@@ -24,14 +24,16 @@ class Pos_emb(nn.Module):
             nn.Linear(2 * config['feature_dim'], 1),
             nn.Sigmoid()
         )
+        self.classifier = torch.nn.Linear(config['feature_dim'], 1)
         self.encoder_layer = nn.TransformerEncoderLayer(d_model=config['pos_dim'], nhead=config['nhead'])
         self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=config['num_layers'])
 
     def forward(self, pos1, pos2, bert_feature):
-        pos = self.get_embedding(pos1, pos2)
-        pos_feature = self.transformer_encoder(pos)[:, 0]
-        pos_feature = self.model(pos_feature)
-        out = self.discriminator(torch.cat((bert_feature, pos_feature), dim=-1))
+        # pos = self.get_embedding(pos1, pos2)
+        # pos_feature = self.transformer_encoder(pos)[:, 0]
+        # pos_feature = self.model(pos_feature)
+        # out = self.discriminator(torch.cat((bert_feature, pos_feature), dim=-1))
+        out = self.classifier(bert_feature)
         return out
 
     def get_embedding(self, pos1, pos2):

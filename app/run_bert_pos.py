@@ -95,7 +95,7 @@ def main(args):
     config['n_pos'] = len(processor.pos)
     config['device'] = device
     config['nhead'] = 2
-    config['num_layers'] = 2
+    config['num_layers'] = 1
     config['maxlen'] = processor.maxlen
     print('config', config)
     print(processor.pos)
