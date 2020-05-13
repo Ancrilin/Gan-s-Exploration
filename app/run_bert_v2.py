@@ -222,8 +222,8 @@ def main(args):
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
         all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
 
-        report = metrics.classification_report(all_y, all_pred, output_dict=True)
-        result.update(report)
+        # report = metrics.classification_report(all_y, all_pred, output_dict=True)
+        # result.update(report)
         y_score = all_detection_preds.squeeze().tolist()
 
         # report
@@ -287,8 +287,8 @@ def main(args):
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
         all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
 
-        report = metrics.classification_report(all_y, all_pred, output_dict=True)
-        result.update(report)
+        # report = metrics.classification_report(all_y, all_pred, output_dict=True)
+        # result.update(report)
         y_score = all_detection_preds.squeeze().tolist()
 
         # report
