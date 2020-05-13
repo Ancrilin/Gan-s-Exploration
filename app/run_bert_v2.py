@@ -158,7 +158,8 @@ def main(args):
                 # 1 表示要保存模型
                 # 0 表示不需要保存模型
                 # -1 表示不需要模型，且超过了patience，需要early stop
-                signal = early_stopping(eval_result['accuracy'])
+                # signal = early_stopping(eval_result['accuracy'])
+                signal = early_stopping(-eval_result['eer'])
                 if signal == -1:
                     break
                 # elif signal == 0:
