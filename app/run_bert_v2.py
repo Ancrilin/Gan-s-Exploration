@@ -129,7 +129,7 @@ def main(args):
                 logits = model(token, mask, type_ids)
                 print(logits.size())
                 # loss = classified_loss(logits, y.long())
-                loss = adversarial_loss(logits, y.long())
+                loss = adversarial_loss(logits, y.float())
                 total_loss += loss.item()
                 loss = loss / args.gradient_accumulation_steps
                 loss.backward()
@@ -215,7 +215,7 @@ def main(args):
                 all_pred.append(logit)
                 all_detection_preds.append(logit)
                 # total_loss += classified_loss(logit, y.long())
-                total_loss += detection_loss(logit, y.long())
+                total_loss += detection_loss(logit, y.float())
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
@@ -282,7 +282,7 @@ def main(args):
                 all_pred.append(logit)
                 all_detection_preds.append(logit)
                 # total_loss += classified_loss(logit, y.long())
-                total_loss += detection_loss(logit, y.long())
+                total_loss += detection_loss(logit, y.float())
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
