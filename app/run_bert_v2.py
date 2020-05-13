@@ -127,7 +127,6 @@ def main(args):
                 batch = len(token)
 
                 logits = model(token, mask, type_ids)
-                print(logits.size())
                 # loss = classified_loss(logits, y.long())
                 loss = adversarial_loss(logits, y.float())
                 total_loss += loss.item()
