@@ -125,6 +125,7 @@ def main(args):
         early_stopping = EarlyStopping(args.patience, logger=logger)
         # Loss function
         adversarial_loss = torch.nn.BCELoss().to(device)
+        classified_loss = torch.nn.CrossEntropyLoss().to(device)
 
         # Optimizers
         optimizer_pos = torch.optim.Adam(pos.parameters(), lr=args.pos_lr)
@@ -158,7 +159,8 @@ def main(args):
                 out = pos(pos1, pos2, real_feature)
                 # print('out', out)
                 # print('y', y)
-                loss = adversarial_loss(out, y.float())
+                # loss = adversarial_loss(out, y.float())
+                loss = classified_loss(out, y.long())
                 loss.backward()
                 total_loss += loss.detach()
 

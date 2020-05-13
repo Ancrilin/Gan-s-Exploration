@@ -24,7 +24,7 @@ class Pos_emb(nn.Module):
             nn.Linear(2 * config['feature_dim'], 1),
             nn.Sigmoid()
         )
-        self.classifier = torch.nn.Linear(config['feature_dim'], 1)
+        self.classifier = torch.nn.Linear(config['feature_dim'], 2)
         self.encoder_layer = nn.TransformerEncoderLayer(d_model=config['pos_dim'], nhead=config['nhead'])
         self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=config['num_layers'])
 
