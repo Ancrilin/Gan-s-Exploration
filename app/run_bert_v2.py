@@ -210,6 +210,7 @@ def main(args):
             with torch.no_grad():
                 logit = model(token, mask, type_ids)
                 total_loss += classified_loss(logit, y.long())
+                l_logit = logit
                 logit = torch.argmax(logit, 1)
                 # total_loss += detection_loss(logit, y.float())
                 all_logit.append(logit)
@@ -234,8 +235,10 @@ def main(args):
             all_detection_binary_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
-        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        # detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        detection_loss = classified_loss(l_logit, all_y.long())
         result['detection_loss'] = detection_loss
+
 
         eer = metrics.cal_eer(all_binary_y, y_score)
 
@@ -280,6 +283,7 @@ def main(args):
             with torch.no_grad():
                 logit = model(token, mask, type_ids)
                 total_loss += classified_loss(logit, y.long())
+                l_logit = logit
                 logit = torch.argmax(logit, 1)
                 # total_loss += detection_loss(logit, y.float())
                 all_logit.append(logit)
@@ -303,7 +307,8 @@ def main(args):
             all_detection_binary_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
-        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        # detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        detection_loss = classified_loss(l_logit, all_y.long())
         result['detection_loss'] = detection_loss
 
         eer = metrics.cal_eer(all_binary_y, y_score)
