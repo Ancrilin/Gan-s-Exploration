@@ -201,6 +201,7 @@ def main(args):
         all_pred = []
         all_logit = []
         all_detection_preds = []
+        l_all_detection_preds = []
         total_loss = 0
         for sample in tqdm.tqdm(dev_dataloader):
             sample = (i.to(device) for i in sample)
@@ -210,7 +211,7 @@ def main(args):
             with torch.no_grad():
                 logit = model(token, mask, type_ids)
                 total_loss += classified_loss(logit, y.long())
-                l_logit = logit
+                l_all_detection_preds.append(logit)
                 logit = torch.argmax(logit, 1)
                 # total_loss += detection_loss(logit, y.float())
                 all_logit.append(logit)
@@ -236,7 +237,7 @@ def main(args):
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
         # detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
-        detection_loss = classified_loss(l_logit, all_y.long())
+        detection_loss = classified_loss(torch.cat(l_all_detection_preds, 0).cpu(), all_y.long())
         result['detection_loss'] = detection_loss
 
 
@@ -272,6 +273,7 @@ def main(args):
         detection_loss = torch.nn.BCELoss().to(device)
         all_pred = []
         all_detection_preds = []
+        l_all_detection_preds = []
 
         total_loss = 0
         all_logit = []
@@ -283,7 +285,7 @@ def main(args):
             with torch.no_grad():
                 logit = model(token, mask, type_ids)
                 total_loss += classified_loss(logit, y.long())
-                l_logit = logit
+                l_all_detection_preds.append(logit)
                 logit = torch.argmax(logit, 1)
                 # total_loss += detection_loss(logit, y.float())
                 all_logit.append(logit)
@@ -308,7 +310,7 @@ def main(args):
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
         # detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
-        detection_loss = classified_loss(l_logit, all_y.long())
+        detection_loss = classified_loss(torch.cat(l_all_detection_preds, 0).cpu(), all_y.long())
         result['detection_loss'] = detection_loss
 
         eer = metrics.cal_eer(all_binary_y, y_score)
