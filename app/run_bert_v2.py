@@ -258,6 +258,8 @@ def main(args):
         result['oos_ind_f_score'] = oos_ind_fscore
         result['y_score'] = y_score
         result['auc'] = roc_auc_score(all_binary_y, y_score)
+        result['all_y'] = all_y
+        result['all_pred'] = all_pred
 
         return result
 
