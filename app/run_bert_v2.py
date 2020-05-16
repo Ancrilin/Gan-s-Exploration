@@ -127,8 +127,8 @@ def main(args):
                 batch = len(token)
 
                 logits = model(token, mask, type_ids)
-                loss = classified_loss(logits, y.long())
-                # loss = adversarial_loss(logits, y.float())
+                # loss = classified_loss(logits, y.long())
+                loss = adversarial_loss(logits, y.float())
                 total_loss += loss.item()
                 loss = loss / args.gradient_accumulation_steps
                 loss.backward()
@@ -210,10 +210,10 @@ def main(args):
 
             with torch.no_grad():
                 logit = model(token, mask, type_ids)
-                total_loss += classified_loss(logit, y.long())
+                # total_loss += classified_loss(logit, y.long())
                 l_all_detection_preds.append(logit)
                 logit = torch.argmax(logit, 1)
-                # total_loss += detection_loss(logit, y.float())
+                total_loss += detection_loss(logit, y.float())
                 all_logit.append(logit)
                 # all_pred.append(torch.argmax(logit, 1))
                 all_pred.append(logit)
@@ -236,8 +236,8 @@ def main(args):
             all_detection_binary_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
-        # detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
-        detection_loss = classified_loss(torch.cat(l_all_detection_preds, 0).cpu(), all_y.long())
+        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        # detection_loss = classified_loss(torch.cat(l_all_detection_preds, 0).cpu(), all_y.long())
         result['detection_loss'] = detection_loss
 
 
@@ -286,10 +286,10 @@ def main(args):
 
             with torch.no_grad():
                 logit = model(token, mask, type_ids)
-                total_loss += classified_loss(logit, y.long())
+                # total_loss += classified_loss(logit, y.long())
                 l_all_detection_preds.append(logit)
                 logit = torch.argmax(logit, 1)
-                # total_loss += detection_loss(logit, y.float())
+                total_loss += detection_loss(logit, y.float())
                 all_logit.append(logit)
                 # all_pred.append(torch.argmax(logit, 1))
                 all_pred.append(logit)
@@ -311,8 +311,8 @@ def main(args):
             all_detection_binary_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
-        # detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
-        detection_loss = classified_loss(torch.cat(l_all_detection_preds, 0).cpu(), all_y.long())
+        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        # detection_loss = classified_loss(torch.cat(l_all_detection_preds, 0).cpu(), all_y.long())
         result['detection_loss'] = detection_loss
 
         eer = metrics.cal_eer(all_binary_y, y_score)
