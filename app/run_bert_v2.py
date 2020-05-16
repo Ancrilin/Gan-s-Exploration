@@ -127,8 +127,8 @@ def main(args):
                 batch = len(token)
 
                 logits = model(token, mask, type_ids)
-                # loss = classified_loss(logits, y.long())
-                loss = adversarial_loss(logits, y.float())
+                loss = classified_loss(logits, y.long())
+                # loss = adversarial_loss(logits, y.float())
                 total_loss += loss.item()
                 loss = loss / args.gradient_accumulation_steps
                 loss.backward()
@@ -176,17 +176,17 @@ def main(args):
                 logger.info(
                     'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
-        from utils.visualization import draw_curve
-        draw_curve(train_loss, iteration, 'train_loss', args.output_dir)
-        if dev_dataset:
-            draw_curve(valid_loss, iteration, 'valid_loss', args.output_dir)
-            draw_curve(valid_ind_class_acc, iteration, 'valid_ind_class_accuracy', args.output_dir)
-
-        if args.patience >= args.n_epoch:
-            save_model(model, path=config['model_save_path'], model_name='bert')
-
-        freeze_data['train_loss'] = train_loss
-        freeze_data['valid_loss'] = valid_loss
+        # from utils.visualization import draw_curve
+        # draw_curve(train_loss, iteration, 'train_loss', args.output_dir)
+        # if dev_dataset:
+        #     draw_curve(valid_loss, iteration, 'valid_loss', args.output_dir)
+        #     draw_curve(valid_ind_class_acc, iteration, 'valid_ind_class_accuracy', args.output_dir)
+        #
+        # if args.patience >= args.n_epoch:
+        #     save_model(model, path=config['model_save_path'], model_name='bert')
+        #
+        # freeze_data['train_loss'] = train_loss
+        # freeze_data['valid_loss'] = valid_loss
 
     def eval(dataset):
         dev_dataloader = DataLoader(dataset, batch_size=args.predict_batch_size, shuffle=False, num_workers=2)
@@ -209,12 +209,14 @@ def main(args):
 
             with torch.no_grad():
                 logit = model(token, mask, type_ids)
+                total_loss += classified_loss(logit, y.long())
+                logit = torch.argmax(logit, 1)
+                # total_loss += detection_loss(logit, y.float())
                 all_logit.append(logit)
                 # all_pred.append(torch.argmax(logit, 1))
                 all_pred.append(logit)
                 all_detection_preds.append(logit)
-                # total_loss += classified_loss(logit, y.long())
-                total_loss += detection_loss(logit, y.float())
+
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
@@ -277,12 +279,13 @@ def main(args):
 
             with torch.no_grad():
                 logit = model(token, mask, type_ids)
+                total_loss += classified_loss(logit, y.long())
+                logit = torch.argmax(logit, 1)
+                # total_loss += detection_loss(logit, y.float())
                 all_logit.append(logit)
                 # all_pred.append(torch.argmax(logit, 1))
                 all_pred.append(logit)
                 all_detection_preds.append(logit)
-                # total_loss += classified_loss(logit, y.long())
-                total_loss += detection_loss(logit, y.float())
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
