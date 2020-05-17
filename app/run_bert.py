@@ -78,7 +78,7 @@ def main(args):
     logger.info('config:')
     logger.info(config)
 
-    print('config.hidden_size', bert_config.hidden_size)
+    print('config.hidden_size', bert_config.hidden_size, type(bert_config), bert_config)
     model = BertClassifier(bert_config, n_class)  # Bert encoder
     if args.fine_tune:
         model.unfreeze_bert_encoder()
