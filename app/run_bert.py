@@ -12,6 +12,7 @@ import torch
 import tqdm
 from torch.utils.data.dataloader import DataLoader
 from transformers.optimization import AdamW
+from sklearn.metrics import roc_auc_score
 
 import metrics
 from config import Config, BertConfig
@@ -22,6 +23,7 @@ from model.bert import BertClassifier
 from processor.oos_processor import OOSProcessor
 from processor.smp_processor import SMPProcessor
 from utils import check_manual_seed, save_model, load_model, output_cases, EarlyStopping
+from utils.tool import ErrorRateAt95Recall, save_result
 
 freeze_data = dict()
 SEED = 123
@@ -152,6 +154,13 @@ def main(args):
                     save_model(model, path=config['model_save_path'], model_name='bert')
 
                 logger.info(eval_result)
+                logger.info('valid_eer: {}'.format(eval_result['eer']))
+                logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
+                logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
+                logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+                logger.info('valid_auc: {}'.format(eval_result['auc']))
+                logger.info(
+                    'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
         from utils.visualization import draw_curve
         draw_curve(train_loss, iteration, 'train_loss', args.output_dir)
@@ -197,6 +206,9 @@ def main(args):
         y_score = all_logit.softmax(1)[:, 1].tolist()
         eer = metrics.cal_eer(all_binary_y, y_score)
 
+        oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(
+            all_pred, all_y)
+
         result['eer'] = eer
         result['ind_class_acc'] = ind_class_acc
         result['loss'] = total_loss / n_sample
@@ -204,6 +216,12 @@ def main(args):
         freeze_data['valid_all_y'] = all_y
         freeze_data['vaild_all_pred'] = all_pred
         freeze_data['valid_score'] = y_score
+
+        result['all_binary_y'] = all_binary_y
+        result['oos_ind_precision'] = oos_ind_precision
+        result['oos_ind_recall'] = oos_ind_recall
+        result['oos_ind_f_score'] = oos_ind_fscore
+        result['auc'] = roc_auc_score(all_binary_y, y_score)
 
         return result
 
@@ -243,6 +261,9 @@ def main(args):
         y_score = all_logit.softmax(1)[:, 1].tolist()
         eer = metrics.cal_eer(all_binary_y, y_score)
 
+        oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(
+            all_pred, all_y)
+
         result['eer'] = eer
         result['ind_class_acc'] = ind_class_acc
         result['loss'] = total_loss / n_sample
@@ -252,6 +273,12 @@ def main(args):
         freeze_data['test_all_y'] = all_y.tolist()
         freeze_data['test_all_pred'] = all_pred.tolist()
         freeze_data['test_score'] = y_score
+
+        result['all_binary_y'] = all_binary_y
+        result['oos_ind_precision'] = oos_ind_precision
+        result['oos_ind_recall'] = oos_ind_recall
+        result['oos_ind_f_score'] = oos_ind_fscore
+        result['auc'] = roc_auc_score(all_binary_y, y_score)
         return result
 
     if args.do_train:
@@ -285,6 +312,13 @@ def main(args):
         dev_dataset = OOSDataset(dev_features)
         eval_result = eval(dev_dataset)
         logger.info(eval_result)
+        logger.info('eval_eer: {}'.format(eval_result['eer']))
+        logger.info('eval_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
+        logger.info('eval_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
+        logger.info('eval_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+        logger.info('eval_auc: {}'.format(eval_result['auc']))
+        logger.info(
+            'eval_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
@@ -299,6 +333,12 @@ def main(args):
         test_dataset = OOSDataset(test_features)
         test_result = test(test_dataset)
         logger.info(test_result)
+        logger.info('test_eer: {}'.format(test_result['eer']))
+        logger.info('test_ood_ind_precision: {}'.format(test_result['oos_ind_precision']))
+        logger.info('test_ood_ind_recall: {}'.format(test_result['oos_ind_recall']))
+        logger.info('test_ood_ind_f_score: {}'.format(test_result['oos_ind_f_score']))
+        logger.info('test_auc: {}'.format(test_result['auc']))
+        logger.info('test_fpr95: {}'.format(ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])))
 
         # 输出错误cases
         if config['dataset'] == 'oos-eval':
