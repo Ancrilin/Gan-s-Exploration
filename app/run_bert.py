@@ -217,6 +217,7 @@ def main(args):
         freeze_data['vaild_all_pred'] = all_pred
         freeze_data['valid_score'] = y_score
 
+        result['y_score'] = y_score
         result['all_binary_y'] = all_binary_y
         result['oos_ind_precision'] = oos_ind_precision
         result['oos_ind_recall'] = oos_ind_recall
@@ -274,6 +275,7 @@ def main(args):
         freeze_data['test_all_pred'] = all_pred.tolist()
         freeze_data['test_score'] = y_score
 
+        result['y_score'] = y_score
         result['all_binary_y'] = all_binary_y
         result['oos_ind_precision'] = oos_ind_precision
         result['oos_ind_recall'] = oos_ind_recall
