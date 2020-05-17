@@ -217,7 +217,8 @@ def main(args):
             all_detection_binary_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
-        y_score = all_detection_preds.squeeze().tolist()
+        # y_score = all_detection_preds.squeeze().tolist()
+        y_score = all_detection_logit.softmax(1)[:, 1].tolist()
         eer = metrics.cal_eer(all_binary_y, y_score)
 
         result['eer'] = eer
@@ -280,7 +281,9 @@ def main(args):
             all_detection_binary_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
-        y_score = all_detection_preds.squeeze().tolist()
+        # y_score = all_detection_preds.squeeze().tolist()
+        y_score = all_detection_logit.softmax(1)[:, 1].tolist()
+        print('y_socre', y_score)
         eer = metrics.cal_eer(all_binary_y, y_score)
 
         result['eer'] = eer
