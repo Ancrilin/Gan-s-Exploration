@@ -136,7 +136,7 @@ def main(args):
                 logit = model(token, mask, type_ids)
                 loss = adversarial_loss(logit, y.float())
                 loss.backward()
-                optimizer.zero_grad()
+                optimizer.step()
                 total_loss += loss.detach()
 
             logger.info('[Epoch {}] Train: loss: {}'.format(i, total_loss / n_sample))

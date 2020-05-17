@@ -136,7 +136,7 @@ def main(args):
                 logit = model(token, mask, type_ids)
                 loss = classified_loss(logit, y.long())
                 loss.backward()
-                optimizer.zero_grad()
+                optimizer.step()
                 total_loss += loss.detach()
 
             logger.info('[Epoch {}] Train: loss: {}'.format(i, total_loss / n_sample))
