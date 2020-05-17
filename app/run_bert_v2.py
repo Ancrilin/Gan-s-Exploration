@@ -15,7 +15,7 @@ from transformers.optimization import AdamW
 
 import metrics
 from data_utils import OOSDataset, PosOOSDataset
-from config import Config
+from config import Config, BertConfig
 from logger import Logger
 from metrics import plot_confusion_matrix
 from processor.oos_processor import OOSProcessor
@@ -46,7 +46,7 @@ def main(args):
     logger.info('seed: {}'.format(args.seed))
 
     logger.info('Loading config...')
-    bert_config = Config('config/bert.ini')
+    bert_config = BertConfig('config/bert.ini')
     bert_config = bert_config(args.bert_type)
 
     # for oos-eval dataset
