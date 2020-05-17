@@ -21,7 +21,7 @@ from metrics import plot_confusion_matrix
 from processor.oos_processor import OOSProcessor
 from processor.smp_processor import SMPProcessor
 from model.dgan import Discriminator, Generator
-from model.bert_v2 import BertClassifier
+from model.bert_v1 import BertClassifier
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
 from utils import convert_to_int_by_threshold
 from utils.visualization import scatter_plot, my_plot_roc
@@ -109,7 +109,7 @@ def main(args):
         n_sample = len(train_dataloader)
         early_stopping = EarlyStopping(args.patience, logger=logger)
         # Loss function
-        adversarial_loss = torch.nn.BCELoss().to(device)
+        classified_loss = torch.nn.CrossEntropyLoss().to(device)
 
         # Optimizers
         optimizer = AdamW(model.parameters(), args.bert_lr)
@@ -134,7 +134,7 @@ def main(args):
 
                 optimizer.zero_grad()
                 logit = model(token, mask, type_ids)
-                loss = adversarial_loss(logit, y.float())
+                loss = classified_loss(logit, y.long())
                 loss.backward()
                 optimizer.zero_grad()
                 total_loss += loss.detach()
@@ -180,7 +180,7 @@ def main(args):
         n_sample = len(dev_dataloader)
         result = dict()
 
-        detection_loss = torch.nn.BCELoss().to(device)
+        detection_loss = torch.nn.CrossEntropyLoss().to(device)
 
         model.eval()
 
@@ -198,8 +198,8 @@ def main(args):
             with torch.no_grad():
                 logit = model(token, mask, type_ids)
                 all_detection_logit.append(logit)
-                all_detection_preds.append(logit)
-                total_loss += detection_loss(logit, y.float())
+                all_detection_preds.append(torch.argmax(logit, 1))
+                total_loss += detection_loss(logit, y.long())
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
@@ -243,7 +243,7 @@ def main(args):
         result = dict()
 
         # Loss function
-        detection_loss = torch.nn.BCELoss().to(device)
+        detection_loss = torch.nn.CrossEntropyLoss().to(device)
 
         model.eval()
 
@@ -261,8 +261,8 @@ def main(args):
             with torch.no_grad():
                 logit = model(token, mask, type_ids)
                 all_detection_logit.append(logit)
-                all_detection_preds.append(logit)
-                total_loss += detection_loss(logit, y.float())
+                all_detection_preds.append(torch.argmax(logit, 1))
+                total_loss += detection_loss(logit, y.long())
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
