@@ -78,6 +78,7 @@ def main(args):
     logger.info('config:')
     logger.info(config)
 
+    print('config.hidden_size', bert_config.hidden_size)
     model = BertClassifier(bert_config, n_class)  # Bert encoder
     if args.fine_tune:
         model.unfreeze_bert_encoder()
@@ -116,7 +117,6 @@ def main(args):
                 batch = len(token)
 
                 logits = model(token, mask, type_ids)
-                print(logits.size())
                 loss = classified_loss(logits, y.long())
                 total_loss += loss.item()
                 loss = loss / args.gradient_accumulation_steps

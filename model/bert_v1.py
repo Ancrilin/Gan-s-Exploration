@@ -19,7 +19,6 @@ class BertClassifier(nn.Module):
         self.num_labels = num_labels
         self.bert = BertModel.from_pretrained(config['PreTrainModelDir'])
         self.classifier = torch.nn.Linear(config.hidden_size, num_labels)
-        # self.classifier = torch.nn.Linear(config.hidden_size, 1)
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None):
         sequence_output, pooled_output = self.bert(input_ids, attention_mask, token_type_ids)
