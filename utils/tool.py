@@ -80,11 +80,19 @@ def output_cases(texts, ground_truth, predicts, path, processor, logit=None):
     df['predict_is_ind'] = df['predict'] != 0
 
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    df.to_csv(path, columns=['text',
-                             'ground_truth', 'predict',
-                             'ground_truth_label', 'predict_label',
-                             'ground_truth_is_ind', 'predict_is_ind'],
-              index=False)
+    if logit == None:
+        df.to_csv(path, columns=['text',
+                                 'ground_truth', 'predict',
+                                 'ground_truth_label', 'predict_label',
+                                 'ground_truth_is_ind', 'predict_is_ind'],
+                  index=False)
+    else:
+        df.to_csv(path, columns=['text',
+                                 'logit',
+                                 'ground_truth', 'predict',
+                                 'ground_truth_label', 'predict_label',
+                                 'ground_truth_is_ind', 'predict_is_ind'],
+                  index=False)
 
 
 def save_gan_model(discriminator: torch.nn.Module, generator: torch.nn.Module, path):
