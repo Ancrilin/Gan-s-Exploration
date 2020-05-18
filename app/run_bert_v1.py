@@ -381,11 +381,11 @@ def main(args):
         else:
             raise ValueError('The dataset {} is not supported.'.format(args.dataset))
 
-        output_cases(texts, test_result['all_binary_y'], test_result['all_detection_binary_preds'],
+        output_cases(texts, test_result['all_binary_y'], test_result['all_detection_preds'],
                      os.path.join(args.output_dir, 'test_cases.csv'), processor, test_result['test_logit'])
 
         # confusion matrix
-        plot_confusion_matrix(test_result['all_binary_y'], test_result['all_detection_binary_preds'],
+        plot_confusion_matrix(test_result['all_binary_y'], test_result['all_detection_preds'],
                               args.output_dir)
 
         beta_log_path = 'beta_log.txt'
