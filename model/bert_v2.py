@@ -24,6 +24,7 @@ class BertClassifier(nn.Module):
     def forward(self, input_ids, attention_mask=None, token_type_ids=None):
         sequence_output, pooled_output = self.bert(input_ids, attention_mask, token_type_ids)
         logits = self.classifier(pooled_output)
+        logits = torch.nn.functional.sigmoid(logits)
         return logits
 
     def freeze_bert_encoder(self):

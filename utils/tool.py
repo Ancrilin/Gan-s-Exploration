@@ -66,7 +66,7 @@ def output_cases(texts, ground_truth, predicts, path, processor, logit=None):
             'text': texts,
             'ground_truth': ground_truth,
             'predict': predicts,
-            'logit': logit
+            'score': logit
         })
     else:
         df = pd.DataFrame(data={
@@ -88,7 +88,7 @@ def output_cases(texts, ground_truth, predicts, path, processor, logit=None):
                   index=False)
     else:
         df.to_csv(path, columns=['text',
-                                 'logit',
+                                 'score',
                                  'ground_truth', 'predict',
                                  'ground_truth_label', 'predict_label',
                                  'ground_truth_is_ind', 'predict_is_ind'],
