@@ -205,6 +205,7 @@ def main(args):
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
         all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        all_detection_logit = torch.cat(all_detection_logit, 0).cpu()
 
         # 计算损失
         result['detection_loss'] = total_loss
@@ -269,6 +270,7 @@ def main(args):
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
         all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        all_detection_logit = torch.cat(all_detection_logit, 0).cpu()
 
         # 计算损失
         result['detection_loss'] = total_loss
@@ -283,7 +285,6 @@ def main(args):
 
         # y_score = all_detection_preds.squeeze().tolist()
         y_score = all_detection_logit.softmax(1)[:, 1].tolist()
-        print('y_socre', y_score)
         eer = metrics.cal_eer(all_binary_y, y_score)
 
         result['eer'] = eer

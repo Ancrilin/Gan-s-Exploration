@@ -48,7 +48,7 @@ def convert_to_int_by_threshold(array, threshold=0.5):
     return _array
 
 
-def output_cases(texts, ground_truth, predicts, path, processor):
+def output_cases(texts, ground_truth, predicts, path, processor, logit=None):
     """
     生成csv case
     :param texts: 文本 list
@@ -61,12 +61,19 @@ def output_cases(texts, ground_truth, predicts, path, processor):
     ground_truth = ground_truth.numpy().astype(int) if isinstance(ground_truth, torch.Tensor) else ground_truth
     predicts = predicts.numpy().astype(int) if isinstance(
         predicts, torch.Tensor) else predicts
-
-    df = pd.DataFrame(data={
-        'text': texts,
-        'ground_truth': ground_truth,
-        'predict': predicts
-    })
+    if logit != None:
+        df = pd.DataFrame(data={
+            'text': texts,
+            'ground_truth': ground_truth,
+            'predict': predicts,
+            'logit': logit
+        })
+    else:
+        df = pd.DataFrame(data={
+            'text': texts,
+            'ground_truth': ground_truth,
+            'predict': predicts
+        })
     df['ground_truth_label'] = df['ground_truth'].apply(lambda i: processor.id_to_label[i])
     df['predict_label'] = df['predict'].apply(lambda i: processor.id_to_label[i])
     df['ground_truth_is_ind'] = df['ground_truth'] != 0

@@ -261,6 +261,8 @@ def main(args):
         # 只有二分类时候ERR才有意义
         y_score = all_logit.softmax(1)[:, 1].tolist()
         eer = metrics.cal_eer(all_binary_y, y_score)
+        test_logit = all_logit.tolist()
+        result['test_logit'] = test_logit
 
         oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(
             all_pred, all_y)
@@ -351,7 +353,7 @@ def main(args):
             raise ValueError('The dataset {} is not supported.'.format(args.dataset))
 
         output_cases(texts, test_result['all_y'], test_result['all_pred'],
-                     os.path.join(args.output_dir, 'test_cases.csv'), processor)
+                     os.path.join(args.output_dir, 'test_cases.csv'), processor, test_result['test_logit'])
 
         # confusion matrix
         plot_confusion_matrix(test_result['all_y'], test_result['all_pred'],
