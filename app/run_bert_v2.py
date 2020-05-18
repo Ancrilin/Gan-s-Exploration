@@ -119,6 +119,9 @@ def main(args):
         valid_oos_ind_recall = []
         valid_oos_ind_f_score = []
 
+        train_loss = []
+        iteration = 0
+
         for i in range(args.n_epoch):
             logger.info('***********************************')
             logger.info('epoch: {}'.format(i))
@@ -137,7 +140,7 @@ def main(args):
                 loss = adversarial_loss(logit, y.float())
                 loss.backward()
                 optimizer.step()
-                total_loss += loss.detach()
+                total_loss += loss.item()
 
             logger.info('[Epoch {}] Train: loss: {}'.format(i, total_loss / n_sample))
             logger.info('---------------------------------------------------------------------------')
@@ -173,6 +176,9 @@ def main(args):
                 logger.info(
                     'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
+        from utils.visualization import draw_curve
+        draw_curve(train_loss, iteration, 'train_loss', args.output_dir)
+
         best_dev = -early_stopping.best_score
 
     def eval(dataset):
@@ -205,6 +211,7 @@ def main(args):
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
         all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        all_detection_logit = torch.cat(all_detection_logit, 0).cpu()
 
         # 计算损失
         result['detection_loss'] = total_loss
@@ -217,7 +224,7 @@ def main(args):
             all_detection_binary_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
-        y_score = all_detection_preds.squeeze().tolist()
+        y_score = all_detection_logit.squeeze().tolist()
         eer = metrics.cal_eer(all_binary_y, y_score)
 
         result['eer'] = eer
@@ -268,6 +275,7 @@ def main(args):
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
         all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        all_detection_logit = torch.cat(all_detection_logit, 0).cpu()
 
         # 计算损失
         result['detection_loss'] = total_loss
@@ -280,8 +288,11 @@ def main(args):
             all_detection_binary_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
-        y_score = all_detection_preds.squeeze().tolist()
+        y_score = all_detection_logit.squeeze().tolist()
         eer = metrics.cal_eer(all_binary_y, y_score)
+
+        test_logit = all_detection_logit.tolist()
+        result['test_logit'] = test_logit
 
         result['eer'] = eer
         result['all_detection_binary_preds'] = all_detection_binary_preds
@@ -367,7 +378,7 @@ def main(args):
             raise ValueError('The dataset {} is not supported.'.format(args.dataset))
 
         output_cases(texts, test_result['all_binary_y'], test_result['all_detection_binary_preds'],
-                     os.path.join(args.output_dir, 'test_cases.csv'), processor)
+                     os.path.join(args.output_dir, 'test_cases.csv'), processor, test_result['test_logit'])
 
         # confusion matrix
         plot_confusion_matrix(test_result['all_binary_y'], test_result['all_detection_binary_preds'],
