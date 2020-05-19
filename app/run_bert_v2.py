@@ -143,6 +143,8 @@ def main(args):
                 total_loss += loss.item()
 
             logger.info('[Epoch {}] Train: loss: {}'.format(i, total_loss / n_sample))
+            train_loss.append(total_loss / n_sample)
+            iteration += 1
             logger.info('---------------------------------------------------------------------------')
 
             if dev_dataset:
