@@ -20,15 +20,10 @@ class BertClassifier(nn.Module):
         self.bert = BertModel.from_pretrained(config['PreTrainModelDir'])
         # self.classifier = torch.nn.Linear(config.hidden_size, num_labels)
         self.classifier = torch.nn.Linear(config.hidden_size, 1)
-        self.model = nn.Sequential(
-            nn.Linear(768, config.hidden_size),
-            nn.Sigmoid()
-        )
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None):
         sequence_output, pooled_output = self.bert(input_ids, attention_mask, token_type_ids)
-        f_vector = self.model(pooled_output)
-        logits = self.classifier(f_vector)
+        logits = self.classifier(pooled_output)
         logits = torch.nn.functional.sigmoid(logits)
         return logits
 
