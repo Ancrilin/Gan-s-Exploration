@@ -87,7 +87,7 @@ def main(args):
     logger.info('config:')
     logger.info(config)
 
-    from model.pos_emb_v2 import Pos_emb
+    from model.pos_emb_v1 import Pos_emb
     E = BertModel.from_pretrained(bert_config['PreTrainModelDir'])  # Bert encoder
     config['pos_dim'] = args.pos_dim
     config['batch_size'] = args.train_batch_size
@@ -123,7 +123,7 @@ def main(args):
         n_sample = len(train_dataloader)
         early_stopping = EarlyStopping(args.patience, logger=logger)
         # Loss function
-        adversarial_loss = torch.nn.BCELoss().to(device)
+        adversarial_loss = torch.nn.CrossEntropyLoss().to(device)
 
         # Optimizers
         optimizer_pos = torch.optim.Adam(pos.parameters(), lr=args.pos_lr)
@@ -157,7 +157,7 @@ def main(args):
                 real_feature = pooled_output
 
                 out = pos(pos1, pos2, real_feature)
-                loss = adversarial_loss(out, y.float())
+                loss = adversarial_loss(out, y.long())
                 loss.backward()
                 total_loss += loss.detach()
 
@@ -212,12 +212,13 @@ def main(args):
         n_sample = len(dev_dataloader)
         result = dict()
 
-        detection_loss = torch.nn.BCELoss().to(device)
+        detection_loss = torch.nn.CrossEntropyLoss().to(device)
 
         pos.eval()
         E.eval()
 
         all_detection_preds = []
+        all_detection_logit = []
 
         for sample in tqdm(dev_dataloader):
             sample = (i.to(device) for i in sample)
@@ -231,30 +232,32 @@ def main(args):
                 real_feature = pooled_output
 
                 out = pos(pos1, pos2, real_feature)
-                all_detection_preds.append(out)
+                all_detection_logit.append(out)
+                all_detection_preds.append(torch.argmax(out, 1))
 
         all_y = LongTensor(dataset.dataset[:, -4].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
-        all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        # all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        all_detection_logit = torch.cat(all_detection_logit, 0).cpu()
 
         # 计算损失
-        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        detection_loss = detection_loss(all_detection_logit, all_binary_y.long())
         result['detection_loss'] = detection_loss
 
         logger.info(
-            metrics.classification_report(all_binary_y, all_detection_binary_preds, target_names=['oos', 'in']))
+            metrics.classification_report(all_binary_y, all_detection_preds, target_names=['oos', 'in']))
 
         # report
         oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(
-            all_detection_binary_preds, all_binary_y)
-        detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
+            all_detection_preds, all_binary_y)
+        detection_acc = metrics.accuracy(all_detection_preds, all_binary_y)
 
-        y_score = all_detection_preds.squeeze().tolist()
+        y_score = all_detection_logit.tolist()
         eer = metrics.cal_eer(all_binary_y, y_score)
 
         result['eer'] = eer
-        result['all_detection_binary_preds'] = all_detection_binary_preds
+        result['all_detection_binary_preds'] = all_detection_preds
         result['detection_acc'] = detection_acc
         result['all_binary_y'] = all_binary_y
         result['oos_ind_precision'] = oos_ind_precision
@@ -276,13 +279,14 @@ def main(args):
         result = dict()
 
         # Loss function
-        detection_loss = torch.nn.BCELoss().to(device)
+        detection_loss = torch.nn.CrossEntropyLoss().to(device)
         classified_loss = torch.nn.CrossEntropyLoss(ignore_index=0).to(device)
 
         pos.eval()
         E.eval()
 
         all_detection_preds = []
+        all_detection_logit = []
         all_class_preds = []
         all_features = []
 
@@ -299,30 +303,32 @@ def main(args):
                 real_feature = pooled_output
 
                 out = pos(pos1, pos2, real_feature)
-                all_detection_preds.append(out)
+                all_detection_logit.append(out)
+                all_detection_preds.append(torch.argmax(out, 1))
 
         all_y = LongTensor(dataset.dataset[:, -4].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
-        all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        # all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        all_detection_logit = torch.cat(all_detection_logit, 0).cpu()
 
         # 计算损失
-        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        detection_loss = detection_loss(all_detection_logit, all_binary_y.long())
         result['detection_loss'] = detection_loss
 
         logger.info(
-            metrics.classification_report(all_binary_y, all_detection_binary_preds, target_names=['oos', 'in']))
+            metrics.classification_report(all_binary_y, all_detection_preds, target_names=['oos', 'in']))
 
         # report
         oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(
-            all_detection_binary_preds, all_binary_y)
-        detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
+            all_detection_preds, all_binary_y)
+        detection_acc = metrics.accuracy(all_detection_preds, all_binary_y)
 
-        y_score = all_detection_preds.squeeze().tolist()
+        y_score = all_detection_logit.tolist()
         eer = metrics.cal_eer(all_binary_y, y_score)
 
         result['eer'] = eer
-        result['all_detection_binary_preds'] = all_detection_binary_preds
+        result['all_detection_binary_preds'] = all_detection_preds
         result['detection_acc'] = detection_acc
         result['all_binary_y'] = all_binary_y
         result['oos_ind_precision'] = oos_ind_precision
