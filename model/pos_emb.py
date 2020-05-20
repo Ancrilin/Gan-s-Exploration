@@ -17,33 +17,19 @@ class Pos_emb(nn.Module):
         self.embedding = nn.Embedding(config['n_pos'], config['pos_dim'], padding_idx=0)
         self.encoder_layer = nn.TransformerEncoderLayer(d_model=config['pos_dim'], nhead=config['nhead'])
         self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=config['num_layers'])
-        self.model = nn.Sequential(
-            nn.Linear(config['pos_dim'], config['feature_dim'], bias=False),
-            nn.Tanh(),
-        )
-
         self.discriminator = nn.Sequential(
-            nn.Linear(config['feature_dim'], 1),
+            nn.Linear(config['feature_dim'] + config['pos_dim'], 1),
             nn.Sigmoid()
         )
 
     def forward(self, pos1, pos2, bert_feature):
-        # pos = self.get_embedding(pos1, pos2)
-        # pos_feature = self.transformer_encoder(pos)[:, 0]
-        # pos_feature = self.model(pos_feature)
-        # out = self.discriminator(torch.cat((bert_feature, pos_feature), dim=-1))
-        out = self.discriminator(bert_feature)
+        pos = self.get_embedding(pos1, pos2)
+        pos_feature = self.transformer_encoder(pos)[:, 0]           # 取综合的特征
+        out = self.discriminator(torch.cat((bert_feature, pos_feature), dim=-1))
         return out
 
     def get_embedding(self, pos1, pos2):
-        # print('config', self.config)
-        # print('pos1', pos1, pos1.size(), 'pos2', pos2, pos2.size())
         embed = self.embedding(pos2)
-        # print(self.config['device'])
-        # print('embed', embed, embed.size(), 'pos_emb',
-        #       self.pos_embedding(self.config['pos_dim'], self.config['maxlen']),
-        #       self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).size())
-        # embedding = torch.add(embed, self.pos_embedding(self.config['pos_dim'], self.config['maxlen']))
         embedding = embed + self.pos_embedding(self.config['pos_dim'], self.config['maxlen']).to(self.config['device'])
         final = torch.rand(len(pos1), self.config['maxlen'], self.config['pos_dim']).to(self.config['device'])
         for i in range(len(pos1)):
@@ -56,9 +42,7 @@ class Pos_emb(nn.Module):
                     final[i][k] = embedding[i][index]
         cls = self.embedding(torch.LongTensor([1]).to(self.config['device']))
         cls = cls.repeat(len(pos1), 1, 1)
-        # print('cls', cls.size())
         final = torch.cat((cls, final), dim=1)
-        # print('final', final.size())
         return final.to(self.config['device'])
 
     def pos_embedding(self, embed, pad_size):

@@ -87,7 +87,6 @@ def main(args):
     logger.info('config:')
     logger.info(config)
 
-    from model.pos import Pos
     from model.pos_emb import Pos_emb
     E = BertModel.from_pretrained(bert_config['PreTrainModelDir'])  # Bert encoder
     config['pos_dim'] = args.pos_dim
@@ -135,6 +134,9 @@ def main(args):
         valid_oos_ind_recall = []
         valid_oos_ind_f_score = []
 
+        train_loss = []
+        iteration = 0
+
         for i in range(args.n_epoch):
             logger.info('***********************************')
             logger.info('epoch: {}'.format(i))
@@ -154,10 +156,7 @@ def main(args):
                 sequence_output, pooled_output = E(token, mask, type_ids)
                 real_feature = pooled_output
 
-                # logger.info(('size pos1: {}, pos2: {}, real_feature: {}'.format(pos1.size(), pos2.size(), real_feature.size())))
                 out = pos(pos1, pos2, real_feature)
-                # print('out', out)
-                # print('y', y)
                 loss = adversarial_loss(out, y.float())
                 loss.backward()
                 total_loss += loss.detach()
@@ -169,6 +168,8 @@ def main(args):
 
             logger.info('[Epoch {}] Train: loss: {}'.format(i, total_loss / n_sample))
             logger.info('---------------------------------------------------------------------------')
+            train_loss.append(total_loss / n_sample)
+            iteration += 1
 
             if dev_dataset:
                 logger.info('#################### eval result at step {} ####################'.format(global_step))
@@ -202,6 +203,9 @@ def main(args):
                     'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
         best_dev = -early_stopping.best_score
+        # 绘制训练损失曲线
+        from utils.visualization import draw_curve
+        draw_curve(train_loss, iteration, 'train_loss', args.output_dir)
 
     def eval(dataset):
         dev_dataloader = DataLoader(dataset, batch_size=args.predict_batch_size, shuffle=False, num_workers=2)
@@ -401,7 +405,7 @@ def main(args):
             raise ValueError('The dataset {} is not supported.'.format(args.dataset))
 
         output_cases(texts, test_result['all_binary_y'], test_result['all_detection_binary_preds'],
-                     os.path.join(args.output_dir, 'test_cases.csv'), processor)
+                     os.path.join(args.output_dir, 'test_cases.csv'), processor, test_result['y_score'])
 
         # confusion matrix
         plot_confusion_matrix(test_result['all_binary_y'], test_result['all_detection_binary_preds'],
