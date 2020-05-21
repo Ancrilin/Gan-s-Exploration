@@ -93,8 +93,8 @@ def main(args):
     config['batch_size'] = args.train_batch_size
     config['n_pos'] = len(processor.pos)
     config['device'] = device
-    config['nhead'] = 2
-    config['num_layers'] = 1
+    config['nhead'] = args.nhead
+    config['num_layers'] = args.num_layers
     config['maxlen'] = processor.maxlen
     print('config', config)
     print(processor.pos)
@@ -467,6 +467,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--pos_lr', type=float, default=2e-5)
     parser.add_argument('--pos_dim', type=int)
+    parser.add_argument('--nhead', type=int, default=1)
+    parser.add_argument('--num_layers', type=int, default=1)
     parser.add_argument('--bert_lr', type=float, default=5e-5, help="Learning rate for Generator.")
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
