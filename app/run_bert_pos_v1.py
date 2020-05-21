@@ -253,7 +253,7 @@ def main(args):
             all_detection_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_preds, all_binary_y)
 
-        y_score = all_detection_logit.tolist()
+        y_score = all_detection_logit.softmax(1)[:, 1].tolist()
         eer = metrics.cal_eer(all_binary_y, y_score)
 
         result['eer'] = eer
@@ -324,8 +324,11 @@ def main(args):
             all_detection_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_preds, all_binary_y)
 
-        y_score = all_detection_logit.tolist()
+        y_score = all_detection_logit.softmax(1)[:, 1].tolist()
         eer = metrics.cal_eer(all_binary_y, y_score)
+
+        test_logit = all_detection_logit.tolist()
+        result['test_logit'] = test_logit
 
         result['eer'] = eer
         result['all_detection_binary_preds'] = all_detection_preds
