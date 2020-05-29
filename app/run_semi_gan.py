@@ -147,7 +147,7 @@ def main(args):
                 token, mask, type_ids, y = sample
                 batch = len(token)
 
-                ood_sample = (y==0.0)
+                ood_sample = (y == 0.0)
                 weight = torch.ones(len(ood_sample)).to(device) - ood_sample * args.beta
                 real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
 
@@ -163,10 +163,8 @@ def main(args):
                 optimizer_D.zero_grad()
                 real_f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
                 # real_loss = adversarial_loss(discriminator_output, (y != 0.0).float())
-                logger.info('y_size: {}'.format(y.size()))
-                logger.info('discriminator_output_size: {}'.format(discriminator_output.size()))
-                logger.info('y'.format(y))
-                logger.info('discriminator_output'.format(discriminator_output))
+                print('y_size', y.size())
+                print('discriminator_output_size', discriminator_output.size())
                 real_loss = real_loss_func(discriminator_output, (y != 0.0).float())
                 if n_class > 2:  # 大于2表示除了训练判别器还要训练分类器
                     class_loss = classified_loss(classification_output, y.long())
