@@ -26,7 +26,8 @@ from processor.oos_processor import OOSProcessor
 from processor.smp_processor import SMPProcessor
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
 from utils import convert_to_int_by_threshold
-from utils.visualization import scatter_plot
+from utils.visualization import scatter_plot, my_plot_roc
+from utils.tool import ErrorRateAt95Recall, save_result
 
 SEED = 123
 freeze_data = dict()
@@ -123,6 +124,9 @@ def main(args):
         valid_oos_ind_recall = []
         valid_oos_ind_f_score = []
 
+        train_loss = []
+        iteration = 0
+
         for i in range(args.n_epoch):
 
             # Initialize model state
@@ -135,6 +139,8 @@ def main(args):
             D_real_loss = 0
             FM_train_loss = 0
             D_class_loss = 0
+
+            total_loss = 0
 
             for sample in tqdm.tqdm(train_dataloader):
                 sample = (i.to(device) for i in sample)
@@ -187,6 +193,9 @@ def main(args):
                 G_train_loss += g_loss.detach() + fm_loss.detach()
                 FM_train_loss += fm_loss.detach()
 
+            # train_loss.append(total_loss / n_sample)
+            # iteration += 1
+
             logger.info('[Epoch {}] Train: D_fake_loss: {}'.format(i, D_fake_loss / n_sample))
             logger.info('[Epoch {}] Train: D_real_loss: {}'.format(i, D_real_loss / n_sample))
             logger.info('[Epoch {}] Train: D_class_loss: {}'.format(i, D_class_loss / n_sample))
@@ -222,6 +231,12 @@ def main(args):
                         save_model(E, path=config['bert_save_path'], model_name='bert')
 
                 logger.info(eval_result)
+                logger.info('valid_eer: {}'.format(eval_result['eer']))
+                logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
+                logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
+                logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+                logger.info(
+                    'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
         if args.patience >= args.n_epoch:
             save_gan_model(D, G, config['gan_save_path'])
@@ -236,6 +251,9 @@ def main(args):
         freeze_data['valid_real_loss'] = valid_detection_loss
         freeze_data['valid_oos_ind_recall'] = valid_oos_ind_recall
         freeze_data['valid_oos_ind_f_score'] = valid_oos_ind_f_score
+
+        # from utils.visualization import draw_curve
+        # draw_curve(train_loss, iteration, 'train_loss', args.output_dir)
 
     def eval(dataset):
         dev_dataloader = DataLoader(dataset, batch_size=args.predict_batch_size, shuffle=False, num_workers=2)
@@ -307,6 +325,7 @@ def main(args):
         result['all_binary_y'] = all_binary_y
         result['oos_ind_recall'] = oos_ind_recall
         result['oos_ind_f_score'] = oos_ind_fscore
+        result['y_score'] = y_score
         if n_class > 2:
             result['class_loss'] = class_loss
             result['class_acc'] = class_acc
@@ -398,6 +417,7 @@ def main(args):
         result['oos_ind_recall'] = oos_ind_recall
         result['oos_ind_f_score'] = oos_ind_fscore
         result['score'] = y_score
+        result['y_score'] = y_score
         if n_class > 2:
             result['class_loss'] = class_loss
             result['class_acc'] = class_acc
@@ -465,6 +485,12 @@ def main(args):
         dev_dataset = OOSDataset(dev_features)
         eval_result = eval(dev_dataset)
         logger.info(eval_result)
+        logger.info('eval_eer: {}'.format(eval_result['eer']))
+        logger.info('eval_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
+        logger.info('eval_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
+        logger.info('eval_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+        logger.info(
+            'eval_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
@@ -479,6 +505,14 @@ def main(args):
         test_dataset = OOSDataset(test_features)
         test_result = test(test_dataset)
         logger.info(test_result)
+        logger.info('test_eer: {}'.format(test_result['eer']))
+        logger.info('test_ood_ind_precision: {}'.format(test_result['oos_ind_precision']))
+        logger.info('test_ood_ind_recall: {}'.format(test_result['oos_ind_recall']))
+        logger.info('test_ood_ind_f_score: {}'.format(test_result['oos_ind_f_score']))
+        logger.info('test_fpr95: {}'.format(ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])))
+        my_plot_roc(test_result['all_binary_y'], test_result['y_score'],
+                    os.path.join(args.output_dir, 'roc_curve.png'))
+        save_result(test_result, os.path.join(args.output_dir, 'test_result'))
 
         # 输出错误cases
         if config['dataset'] == 'oos-eval':
