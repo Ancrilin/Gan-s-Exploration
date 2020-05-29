@@ -323,6 +323,7 @@ def main(args):
         result['all_detection_binary_preds'] = all_detection_binary_preds
         result['detection_acc'] = detection_acc
         result['all_binary_y'] = all_binary_y
+        result['oos_ind_precision'] = oos_ind_precision
         result['oos_ind_recall'] = oos_ind_recall
         result['oos_ind_f_score'] = oos_ind_fscore
         result['y_score'] = y_score
