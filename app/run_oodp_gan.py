@@ -15,13 +15,13 @@ from sklearn.manifold import TSNE
 from torch.utils.data.dataloader import DataLoader
 from transformers import BertModel
 from transformers.optimization import AdamW
-from importlib import import_module
 
 import metrics
 from config import Config
 from data_utils import OOSDataset
 from logger import Logger
 from metrics import plot_confusion_matrix
+from model.gan import Discriminator, Generator
 from processor.oos_processor import OOSProcessor
 from processor.smp_processor import SMPProcessor
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
@@ -31,9 +31,10 @@ from utils.tool import ErrorRateAt95Recall, save_result
 
 SEED = 123
 freeze_data = dict()
+best_dev = -1
 
 if torch.cuda.is_available():
-    device = 'cuda:0'
+    device = 'cuda'
     FloatTensor = torch.cuda.FloatTensor
     LongTensor = torch.cuda.LongTensor
 else:
@@ -85,10 +86,8 @@ def main(args):
     logger.info('config:')
     logger.info(config)
 
-    model = import_module('model.' + args.model)
-
-    D = model.Discriminator(config)
-    G = model.Generator(config)
+    D = Discriminator(config)
+    G = Generator(config)
     E = BertModel.from_pretrained(bert_config['PreTrainModelDir'])  # Bert encoder
 
     if args.fine_tune:
@@ -107,6 +106,7 @@ def main(args):
     def train(train_dataset, dev_dataset):
         train_dataloader = DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=True, num_workers=2)
 
+        global best_dev
         nonlocal global_step
         n_sample = len(train_dataloader)
         early_stopping = EarlyStopping(args.patience, logger=logger)
@@ -125,11 +125,9 @@ def main(args):
         FM_total_train_loss = []
         D_total_class_loss = []
         valid_detection_loss = []
+        valid_oos_ind_precision = []
         valid_oos_ind_recall = []
         valid_oos_ind_f_score = []
-
-        train_loss = []
-        iteration = 0
 
         for i in range(args.n_epoch):
 
@@ -144,12 +142,14 @@ def main(args):
             FM_train_loss = 0
             D_class_loss = 0
 
-            total_loss = 0
-
             for sample in tqdm.tqdm(train_dataloader):
                 sample = (i.to(device) for i in sample)
                 token, mask, type_ids, y = sample
                 batch = len(token)
+
+                ood_sample = (y==0.0)
+                weight = torch.ones(len(ood_sample)).to(device) - ood_sample * args.beta
+                real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
 
                 # the label used to train generator and discriminator.
                 valid_label = FloatTensor(batch, 1).fill_(1.0).detach()
@@ -162,7 +162,9 @@ def main(args):
                 # train D on real
                 optimizer_D.zero_grad()
                 real_f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
+                discriminator_output = discriminator_output.squeeze()
                 real_loss = adversarial_loss(discriminator_output, (y != 0.0).float())
+                # real_loss = real_loss_func(discriminator_output, (y != 0.0).float())
                 if n_class > 2:  # 大于2表示除了训练判别器还要训练分类器
                     class_loss = classified_loss(classification_output, y.long())
                     real_loss += class_loss
@@ -170,10 +172,11 @@ def main(args):
                 real_loss.backward()
 
                 # # train D on fake
-                z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
+                z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 fake_discriminator_output = D.detect_only(fake_feature)
-                fake_loss = args.beta * adversarial_loss(fake_discriminator_output, fake_label)
+                # fake_loss = args.beta * adversarial_loss(fake_discriminator_output, fake_label)
+                fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
                 fake_loss.backward()
                 optimizer_D.step()
 
@@ -182,7 +185,7 @@ def main(args):
 
                 # train G
                 optimizer_G.zero_grad()
-                z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
+                z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
                 gd_loss = adversarial_loss(D_decision, valid_label)
                 fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
@@ -196,9 +199,6 @@ def main(args):
                 D_real_loss += real_loss.detach()
                 G_train_loss += g_loss.detach() + fm_loss.detach()
                 FM_train_loss += fm_loss.detach()
-
-            # train_loss.append(total_loss / n_sample)
-            # iteration += 1
 
             logger.info('[Epoch {}] Train: D_fake_loss: {}'.format(i, D_fake_loss / n_sample))
             logger.info('[Epoch {}] Train: D_real_loss: {}'.format(i, D_real_loss / n_sample))
@@ -218,6 +218,7 @@ def main(args):
                 eval_result = eval(dev_dataset)
 
                 valid_detection_loss.append(eval_result['detection_loss'])
+                valid_oos_ind_precision.append(eval_result['oos_ind_precision'])
                 valid_oos_ind_recall.append(eval_result['oos_ind_recall'])
                 valid_oos_ind_f_score.append(eval_result['oos_ind_f_score'])
 
@@ -253,11 +254,11 @@ def main(args):
         freeze_data['G_total_train_loss'] = G_total_train_loss
         freeze_data['FM_total_train_loss'] = FM_total_train_loss
         freeze_data['valid_real_loss'] = valid_detection_loss
+        freeze_data['valid_oos_ind_precision'] = valid_oos_ind_precision
         freeze_data['valid_oos_ind_recall'] = valid_oos_ind_recall
         freeze_data['valid_oos_ind_f_score'] = valid_oos_ind_f_score
 
-        # from utils.visualization import draw_curve
-        # draw_curve(train_loss, iteration, 'train_loss', args.output_dir)
+        best_dev = -early_stopping.best_score
 
     def eval(dataset):
         dev_dataloader = DataLoader(dataset, batch_size=args.predict_batch_size, shuffle=False, num_workers=2)
@@ -447,7 +448,7 @@ def main(args):
         with torch.no_grad():
             while start < num_output:
                 end = min(num_output, start + batch)
-                z = FloatTensor(np.random.normal(0, 1, size=(end - start, 32, args.G_z_dim)))
+                z = FloatTensor(np.random.normal(0, 1, size=(end - start, args.G_z_dim)))
                 fake_feature = G(z)
                 f_vector, _ = D.detect_only(fake_feature, return_feature=True)
                 fake_features.append(f_vector)
@@ -465,11 +466,6 @@ def main(args):
             text_train_set = processor.read_dataset(data_path, ['train'])
             text_dev_set = processor.read_dataset(data_path, ['val'])
 
-        # # 去除训练集中的ood数据
-        # if config['dataset'] == 'smp':
-        #     text_train_set = [sample for sample in text_train_set if sample['domain'] != 'chat']
-        # else:
-        #     text_train_set = [sample for sample in text_train_set if sample[-1] != 'oos']
         train_features = processor.convert_to_ids(text_train_set)
         train_dataset = OOSDataset(train_features)
         dev_features = processor.convert_to_ids(text_dev_set)
@@ -533,6 +529,17 @@ def main(args):
         # confusion matrix
         plot_confusion_matrix(test_result['all_binary_y'], test_result['all_detection_binary_preds'],
                               args.output_dir)
+
+        # beta_log_path = 'beta_log.txt'
+        # if os.path.exists(beta_log_path):
+        #     flag = True
+        # else:
+        #     flag = False
+        # with open(beta_log_path, 'a', encoding='utf-8') as f:
+        #     if flag == False:
+        #         f.write('seed\tbeta\tdataset\tdev_eer\ttest_eer\tdata_size\n')
+        #     line = '\t'.join([str(config['seed']), str(config['beta']), str(config['data_file']), str(best_dev), str(test_result['eer']), '100'])
+        #     f.write(line + '\n')
 
         if args.do_vis:
             # [2 * length, feature_fim]
@@ -621,16 +628,12 @@ if __name__ == '__main__':
 
     parser.add_argument('--D_lr', type=float, default=1e-5, help="Learning rate for Discriminator.")
     parser.add_argument('--G_lr', type=float, default=1e-5, help="Learning rate for Generator.")
-    parser.add_argument('--beta', type=float, default=1.0, help="Weight of fake sample loss for Discriminator.")
+    parser.add_argument('--beta', type=float, default=0.1, help="Weight of fake sample loss for Discriminator.")
 
     parser.add_argument('--bert_lr', type=float, default=2e-4, help="Learning rate for Generator.")
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
     parser.add_argument('--seed', type=int, default=123, help='seed')
-
-    parser.add_argument('--model', type=str, required=True,
-                        help='chose gan model',
-                        choices={'gan', 'dgan', 'lstm_gan'})
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
