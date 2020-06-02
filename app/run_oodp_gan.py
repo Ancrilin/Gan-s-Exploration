@@ -50,6 +50,8 @@ def check_args(args):
 
 def main(args):
     logger.info('Checking...')
+    SEED = args.seed
+    logger.info('seed: {}'.format(SEED))
     check_manual_seed(SEED)
     check_args(args)
 
@@ -624,6 +626,7 @@ if __name__ == '__main__':
     parser.add_argument('--bert_lr', type=float, default=2e-4, help="Learning rate for Generator.")
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
+    parser.add_argument('--seed', type=int, default=123, help='seed')
 
     parser.add_argument('--model', type=str, required=True,
                         help='chose gan model',
