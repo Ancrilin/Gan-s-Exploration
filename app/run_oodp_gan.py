@@ -15,13 +15,13 @@ from sklearn.manifold import TSNE
 from torch.utils.data.dataloader import DataLoader
 from transformers import BertModel
 from transformers.optimization import AdamW
+from importlib import import_module
 
 import metrics
 from config import Config
 from data_utils import OOSDataset
 from logger import Logger
 from metrics import plot_confusion_matrix
-from model.gan import Discriminator, Generator
 from processor.oos_processor import OOSProcessor
 from processor.smp_processor import SMPProcessor
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
@@ -53,6 +53,7 @@ def main(args):
     logger.info('Checking...')
     SEED = args.seed
     logger.info('seed: {}'.format(SEED))
+    logger.info('model: {}'.format(args.model))
     check_manual_seed(SEED)
     check_args(args)
 
@@ -86,8 +87,10 @@ def main(args):
     logger.info('config:')
     logger.info(config)
 
-    D = Discriminator(config)
-    G = Generator(config)
+    model = import_module('model.' + args.model)
+
+    D = model.Discriminator(config)
+    G = model.Generator(config)
     E = BertModel.from_pretrained(bert_config['PreTrainModelDir'])  # Bert encoder
 
     if args.fine_tune:
@@ -172,7 +175,10 @@ def main(args):
                 real_loss.backward()
 
                 # # train D on fake
-                z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                if args.model == 'lstm_gan':
+                    z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
+                else:
+                    z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 fake_discriminator_output = D.detect_only(fake_feature)
                 # fake_loss = args.beta * adversarial_loss(fake_discriminator_output, fake_label)
@@ -185,7 +191,10 @@ def main(args):
 
                 # train G
                 optimizer_G.zero_grad()
-                z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                if args.model == 'lstm_gan':
+                    z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
+                else:
+                    z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
                 gd_loss = adversarial_loss(D_decision, valid_label)
                 fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
@@ -448,7 +457,10 @@ def main(args):
         with torch.no_grad():
             while start < num_output:
                 end = min(num_output, start + batch)
-                z = FloatTensor(np.random.normal(0, 1, size=(end - start, args.G_z_dim)))
+                if args.model == 'lstm_gan':
+                    z = FloatTensor(np.random.normal(0, 1, size=(end - start, 32, args.G_z_dim)))
+                else:
+                    z = FloatTensor(np.random.normal(0, 1, size=(end - start, args.G_z_dim)))
                 fake_feature = G(z)
                 f_vector, _ = D.detect_only(fake_feature, return_feature=True)
                 fake_features.append(f_vector)
@@ -634,6 +646,9 @@ if __name__ == '__main__':
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
     parser.add_argument('--seed', type=int, default=123, help='seed')
+    parser.add_argument('--model', type=str, required=True,
+                        choices={'gan', 'dgan', 'lstm_gan'},
+                        help='choose gan model')
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
