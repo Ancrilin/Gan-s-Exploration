@@ -173,7 +173,6 @@ def main(args):
 
                 # # train D on fake
                 z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
-                print('z size', z.size())
                 fake_feature = G(z).detach()
                 fake_discriminator_output = D.detect_only(fake_feature)
                 fake_loss = args.beta * adversarial_loss(fake_discriminator_output, fake_label)
