@@ -48,22 +48,16 @@ class Discriminator(nn.Module):
 class Generator(nn.Module):
     def __init__(self, config: dict):
         super(Generator, self).__init__()
-        self.model = nn.Sequential(
-            nn.Linear(config['G_z_dim'], 1024, bias=False),
-            nn.Tanh(),
-            nn.Linear(1024, 768, bias=False),
-            nn.Tanh(),
-            nn.Linear(768, config['feature_dim'], bias=False),
-            nn.Tanh()
-        )
-        self.lstm = nn.LSTM(config['G_z_dim'], 768, 2,
+        self.lstm = nn.LSTM(input_size=config['G_z_dim'], hidden_size=1024, num_layers=2,
                             bidirectional=True, batch_first=True, dropout=0.5)
+        self.fc = nn.Linear(1024 * 2, config['feature_dim'])
 
     def forward(self, z):
         # [batch, feature_dim]
         # feature_vector = self.model(z)
         out, _ = self.lstm(z)
-        out = self.fc(out[:, -1, :])  # 句子最后时刻的 hidden state
+        out = self.fc(out[:, -1, :])  # 最后时刻的 hidden state
+        out = self.fc(out)
         return out
 
 
