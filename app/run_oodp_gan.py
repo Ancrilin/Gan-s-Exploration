@@ -170,7 +170,7 @@ def main(args):
                 real_loss.backward()
 
                 # # train D on fake
-                z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 fake_discriminator_output = D.detect_only(fake_feature)
                 fake_loss = args.beta * adversarial_loss(fake_discriminator_output, fake_label)
@@ -182,7 +182,7 @@ def main(args):
 
                 # train G
                 optimizer_G.zero_grad()
-                z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
                 fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
                 gd_loss = adversarial_loss(D_decision, valid_label)
                 fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
@@ -447,7 +447,7 @@ def main(args):
         with torch.no_grad():
             while start < num_output:
                 end = min(num_output, start + batch)
-                z = FloatTensor(np.random.normal(0, 1, size=(end - start, args.G_z_dim)))
+                z = FloatTensor(np.random.normal(0, 1, size=(end - start, 32, args.G_z_dim)))
                 fake_feature = G(z)
                 f_vector, _ = D.detect_only(fake_feature, return_feature=True)
                 fake_features.append(f_vector)
