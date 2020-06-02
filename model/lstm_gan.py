@@ -55,8 +55,8 @@ class Generator(nn.Module):
     def forward(self, z):
         # [batch, feature_dim]
         # feature_vector = self.model(z)
-        out, _ = self.lstm(z)
-        out = self.fc(out[:, -1, :])  # 最后时刻的 hidden state
+        lstm_output, (h_n, c_n) = self.lstm(z)
+        out = self.fc(lstm_output[:, -1, :])  # 最后时刻的 hidden state
         out = self.fc(out)
         return out
 
