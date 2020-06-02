@@ -57,7 +57,6 @@ class Generator(nn.Module):
         # feature_vector = self.model(z)
         lstm_output, (h_n, c_n) = self.lstm(z)
         out = self.fc(lstm_output[:, -1, :])  # 最后时刻的 hidden state
-        out = self.fc(out)
         return out
 
 
