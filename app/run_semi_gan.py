@@ -162,9 +162,11 @@ def main(args):
                 # train D on real
                 optimizer_D.zero_grad()
                 real_f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
-                # real_loss = adversarial_loss(discriminator_output, (y != 0.0).float())
                 discriminator_output = discriminator_output.squeeze()
-                real_loss = real_loss_func(discriminator_output, (y != 0.0).float())
+                if args.oodp:
+                    real_loss = real_loss_func(discriminator_output, (y != 0.0).float())
+                else:
+                    real_loss = adversarial_loss(discriminator_output, (y != 0.0).float())
                 if n_class > 2:  # 大于2表示除了训练判别器还要训练分类器
                     class_loss = classified_loss(classification_output, y.long())
                     real_loss += class_loss
@@ -633,6 +635,7 @@ if __name__ == '__main__':
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
     parser.add_argument('--seed', type=int, default=123, help='seed')
+    parser.add_argument('--oodp', action='store_true', default=False)
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
