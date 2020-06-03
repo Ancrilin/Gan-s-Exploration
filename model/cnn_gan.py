@@ -67,6 +67,8 @@ class Generator(nn.Module):
     def forward(self, z):
         # [batch, feature_dim]
         # feature_vector = self.model(z)
+        # battch, seq, feature_dim
+        # batch, channel, seq, feature_dim
         # channel 为 1，要增加 1个维度
         z = z.unsqueeze(1)
         out = torch.cat([self.conv_and_pool(z, conv) for conv in self.convs], 1)
