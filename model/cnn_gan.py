@@ -3,7 +3,9 @@
 # @file: GAN.py
 # @time: 2020/01/13
 # @contact: devross@gmail.com
+import torch
 from torch import nn
+import torch.nn.functional as F
 
 
 class Discriminator(nn.Module):
@@ -48,14 +50,26 @@ class Discriminator(nn.Module):
 class Generator(nn.Module):
     def __init__(self, config: dict):
         super(Generator, self).__init__()
-        self.lstm = nn.LSTM(input_size=config['G_z_dim'], hidden_size=1024, num_layers=1,
-                            bidirectional=True, batch_first=True, dropout=0.5)
-        self.fc = nn.Linear(1024 * 2, config['feature_dim'])
+        self.filter_sizes = (2, 3, 4)  # 卷积核尺寸
+        self.num_filters = 256  # 卷积核数量(channels数)
+        self.embed = 768
+        self.dropout = 0.5
+        self.convs = nn.ModuleList(
+            [nn.Conv2d(1, self.num_filters, (k, config['G_z_dim'])) for k in self.filter_sizes])
+        self.dropout = nn.Dropout(self.dropout)
+        self.fc = nn.Linear(self.num_filters * len(self.filter_sizes), config['feature_dim'])
+
+    def conv_and_pool(self, x, conv):
+        x = F.relu(conv(x)).squeeze(3)
+        x = F.max_pool1d(x, x.size(2)).squeeze(2)
+        return x
 
     def forward(self, z):
-        # [batch, seq_len, feature_dim]
-        lstm_output, (h_n, c_n) = self.lstm(z)
-        out = self.fc(lstm_output[:, -1, :])  # 最后时刻的 hidden state
+        # [batch, feature_dim]
+        # feature_vector = self.model(z)
+        out = torch.cat([self.conv_and_pool(z, conv) for conv in self.convs], 1)
+        out = self.dropout(out)
+        out = self.fc(out)
         return out
 
 

@@ -175,7 +175,7 @@ def main(args):
                 real_loss.backward()
 
                 # # train D on fake
-                if args.model == 'lstm_gan':
+                if args.model == 'lstm_gan' or args.model == 'cnn_gan':
                     z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
                 else:
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
@@ -191,7 +191,7 @@ def main(args):
 
                 # train G
                 optimizer_G.zero_grad()
-                if args.model == 'lstm_gan':
+                if args.model == 'lstm_gan' or args.model == 'cnn_gan':
                     z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
                 else:
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
@@ -457,7 +457,7 @@ def main(args):
         with torch.no_grad():
             while start < num_output:
                 end = min(num_output, start + batch)
-                if args.model == 'lstm_gan':
+                if args.model == 'lstm_gan' or args.model == 'cnn_gan':
                     z = FloatTensor(np.random.normal(0, 1, size=(end - start, 32, args.G_z_dim)))
                 else:
                     z = FloatTensor(np.random.normal(0, 1, size=(end - start, args.G_z_dim)))
@@ -647,7 +647,7 @@ if __name__ == '__main__':
                         help='Whether to fine tune BERT during training.')
     parser.add_argument('--seed', type=int, default=123, help='seed')
     parser.add_argument('--model', type=str, required=True,
-                        choices={'gan', 'dgan', 'lstm_gan'},
+                        choices={'gan', 'dgan', 'lstm_gan', 'cnn_gan'},
                         help='choose gan model')
 
     args = parser.parse_args()
