@@ -163,7 +163,7 @@ def main(args):
                 optimizer_D.zero_grad()
                 real_f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
                 discriminator_output = discriminator_output.squeeze()
-                if args.oodp:
+                if not args.oodp:
                     real_loss = real_loss_func(discriminator_output, (y != 0.0).float())
                 else:
                     real_loss = adversarial_loss(discriminator_output, (y != 0.0).float())
@@ -177,7 +177,7 @@ def main(args):
                 z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 fake_discriminator_output = D.detect_only(fake_feature)
-                if args.oodp:
+                if not args.oodp:
                     fake_loss = args.beta * adversarial_loss(fake_discriminator_output, fake_label)
                 else:
                     fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
