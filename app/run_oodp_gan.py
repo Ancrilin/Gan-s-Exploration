@@ -151,8 +151,8 @@ def main(args):
                 batch = len(token)
 
                 ood_sample = (y==0.0)
-                weight = torch.ones(len(ood_sample)).to(device) - ood_sample * args.beta
-                real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
+                # weight = torch.ones(len(ood_sample)).to(device) - ood_sample * args.beta
+                # real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
 
                 # the label used to train generator and discriminator.
                 valid_label = FloatTensor(batch, 1).fill_(1.0).detach()

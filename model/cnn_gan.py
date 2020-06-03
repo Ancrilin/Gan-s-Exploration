@@ -60,6 +60,7 @@ class Generator(nn.Module):
         self.fc = nn.Linear(self.num_filters * len(self.filter_sizes), config['feature_dim'])
 
     def conv_and_pool(self, x, conv):
+        # batch, num_filters, seq, dim
         x = F.relu(conv(x)).squeeze(3)
         x = F.max_pool1d(x, x.size(2)).squeeze(2)
         return x
@@ -67,7 +68,7 @@ class Generator(nn.Module):
     def forward(self, z):
         # [batch, feature_dim]
         # feature_vector = self.model(z)
-        # battch, seq, feature_dim
+        # batch, seq, feature_dim
         # batch, channel, seq, feature_dim
         # channel 为 1，要增加 1个维度
         z = z.unsqueeze(1)
