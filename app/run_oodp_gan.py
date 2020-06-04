@@ -181,7 +181,7 @@ def main(args):
                 real_loss.backward()
 
                 if args.do_vis:
-                    all_features.append(real_f_vector)
+                    all_features.append(real_f_vector.detach())
 
                 # # train D on fake
                 if args.model == 'lstm_gan' or args.model == 'cnn_gan':
