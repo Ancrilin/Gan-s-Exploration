@@ -53,6 +53,7 @@ def main(args):
     logger.info('Checking...')
     SEED = args.seed
     logger.info('seed: {}'.format(SEED))
+    logger.info('oodp: {}'.format(args.oodp))
     check_manual_seed(SEED)
     check_args(args)
 
