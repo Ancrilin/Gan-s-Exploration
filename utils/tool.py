@@ -230,4 +230,4 @@ def save_result(result, save_path):
     numpy.save(save_path, numpy.array([result['all_binary_y'], result['y_score']]))
 
 def save_feature(feature, save_path):
-    numpy.save(save_path, numpy.arary(feature))
+    numpy.save(save_path, numpy.array(feature))
