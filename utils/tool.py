@@ -11,7 +11,6 @@ from sklearn.metrics import roc_auc_score
 import numpy
 import pandas as pd
 import torch
-from torch.backends import cudnn
 
 if torch.cuda.is_available():
     device = 'cuda:0'
@@ -34,8 +33,7 @@ def check_manual_seed(seed):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
 
-    cudnn.benchmark = False  # if benchmark=True, deterministic will be False
-    cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False  # if benchmark=True, deterministic will be False
 
     print('Using manual seed: {seed}'.format(seed=seed))
 

@@ -93,6 +93,9 @@ def main(args):
     G = model.Generator(config)
     E = BertModel.from_pretrained(bert_config['PreTrainModelDir'])  # Bert encoder
 
+    logger.info('Discriminator: {}'.format(D))
+    logger.info('Generator: {}'.format(G))
+
     if args.fine_tune:
         for param in E.parameters():
             param.requires_grad = True
