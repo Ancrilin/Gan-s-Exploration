@@ -27,7 +27,7 @@ from processor.smp_processor import SMPProcessor
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
 from utils import convert_to_int_by_threshold
 from utils.visualization import scatter_plot, my_plot_roc
-from utils.tool import ErrorRateAt95Recall, save_result
+from utils.tool import ErrorRateAt95Recall, save_result, save_feature
 
 SEED = 123
 freeze_data = dict()
@@ -135,6 +135,9 @@ def main(args):
         valid_oos_ind_recall = []
         valid_oos_ind_f_score = []
 
+        all_features = []
+        result = dict()
+
         for i in range(args.n_epoch):
 
             # Initialize model state
@@ -176,6 +179,9 @@ def main(args):
                     real_loss += class_loss
                     D_class_loss += class_loss.detach()
                 real_loss.backward()
+
+                if args.do_vis:
+                    all_features.append(real_f_vector)
 
                 # # train D on fake
                 if args.model == 'lstm_gan' or args.model == 'cnn_gan':
@@ -271,6 +277,11 @@ def main(args):
         freeze_data['valid_oos_ind_f_score'] = valid_oos_ind_f_score
 
         best_dev = -early_stopping.best_score
+
+        if args.do_vis:
+            all_features = torch.cat(all_features, 0).cpu().numpy()
+            result['all_features'] = all_features
+        return result
 
     def eval(dataset):
         dev_dataloader = DataLoader(dataset, batch_size=args.predict_batch_size, shuffle=False, num_workers=2)
@@ -486,7 +497,9 @@ def main(args):
         dev_features = processor.convert_to_ids(text_dev_set)
         dev_dataset = OOSDataset(dev_features)
 
-        train(train_dataset, dev_dataset)
+        train_result = train(train_dataset, dev_dataset)
+        save_feature(train_result['all_features'], os.path.join(args.output_dir, 'train_feature'))
+
 
     if args.do_eval:
         logger.info('#################### eval result at step {} ####################'.format(global_step))
@@ -529,6 +542,7 @@ def main(args):
         my_plot_roc(test_result['all_binary_y'], test_result['y_score'],
                     os.path.join(args.output_dir, 'roc_curve.png'))
         save_result(test_result, os.path.join(args.output_dir, 'test_result'))
+        save_feature(test_result['all_features'], os.path.join(args.output_dir, 'test_feature'))
 
         # 输出错误cases
         if config['dataset'] == 'oos-eval':
