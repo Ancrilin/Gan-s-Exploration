@@ -34,8 +34,8 @@ def check_manual_seed(seed):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
 
-    # cudnn.benchmark = False  # if benchmark=True, deterministic will be False
-    # cudnn.deterministic = True
+    cudnn.benchmark = False  # if benchmark=True, deterministic will be False
+    cudnn.deterministic = True
 
     print('Using manual seed: {seed}'.format(seed=seed))
 
