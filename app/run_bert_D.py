@@ -120,6 +120,7 @@ def main(args):
 
                 f_vector, discriminator_output, classification_output = model(token, mask, type_ids, return_feature=True)
                 print('-------', discriminator_output.size())
+                print('dis', discriminator_output)
                 discriminator_output = discriminator_output.squeeze()
                 if args.BCE:
                     print('=======', discriminator_output.size(), y.size())
