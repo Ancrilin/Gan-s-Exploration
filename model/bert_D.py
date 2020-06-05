@@ -30,7 +30,7 @@ class BertClassifier(nn.Module):
         )
 
         self.classifier = nn.Sequential(
-            nn.Linear(d_config['D_Wf_dim'], config['n_class']),
+            nn.Linear(d_config['D_Wf_dim'], d_config['n_class']),
         )
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None, return_feature=False):
