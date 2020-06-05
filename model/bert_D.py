@@ -36,7 +36,9 @@ class BertClassifier(nn.Module):
     def forward(self, input_ids, attention_mask=None, token_type_ids=None, return_feature=False):
         sequence_output, pooled_output = self.bert(input_ids, attention_mask, token_type_ids)
         real_feature = sequence_output
+        print('real_feature', real_feature.size())
         f_vector = self.model(real_feature)
+        print('f_vector', f_vector.size())
         discriminator_output = self.discriminator(f_vector)
         classification_output = self.classifier(f_vector)
         if return_feature:
