@@ -386,19 +386,6 @@ def main(args):
         plot_confusion_matrix(test_result['all_y'], test_result['all_pred'],
                               args.output_dir)
 
-    with open(os.path.join(config['output_dir'], 'freeze_data.pkl'), 'wb') as f:
-        pickle.dump(freeze_data, f)
-
-    df = pd.DataFrame(data={'valid_y': freeze_data['valid_all_y'],
-                            'valid_score': freeze_data['valid_score'],
-                            })
-    df.to_csv(os.path.join(config['output_dir'], 'valid_score.csv'))
-
-    df = pd.DataFrame(data={'test_y': freeze_data['test_all_y'],
-                            'test_score': freeze_data['test_score']
-                            })
-    df.to_csv(os.path.join(config['output_dir'], 'test_score.csv'))
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
