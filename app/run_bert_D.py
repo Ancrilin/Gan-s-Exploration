@@ -220,6 +220,11 @@ def main(args):
         y_score = all_detection_preds.squeeze().tolist()
         eer = metrics.cal_eer(all_binary_y, y_score)
 
+        ind_class_acc = metrics.ind_class_accuracy(all_detection_binary_preds, all_y)
+
+        result['ind_class_acc'] = ind_class_acc
+        result['loss'] = total_loss / n_sample
+
         result['eer'] = eer
         result['all_detection_binary_preds'] = all_detection_binary_preds
         result['detection_acc'] = detection_acc
@@ -280,6 +285,11 @@ def main(args):
         if args.do_vis:
             all_features = torch.cat(all_features, 0).cpu().numpy()
             result['all_features'] = all_features
+
+        ind_class_acc = metrics.ind_class_accuracy(all_detection_binary_preds, all_y)
+
+        result['ind_class_acc'] = ind_class_acc
+        result['loss'] = total_loss / n_sample
 
         result['eer'] = eer
         result['all_detection_binary_preds'] = all_detection_binary_preds
