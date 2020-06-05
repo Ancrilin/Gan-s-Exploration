@@ -119,11 +119,8 @@ def main(args):
                 batch = len(token)
 
                 f_vector, discriminator_output, classification_output = model(token, mask, type_ids, return_feature=True)
-                print('-------', discriminator_output.size())
                 discriminator_output = discriminator_output.squeeze()
                 if args.BCE:
-                    print('=======', discriminator_output.size(), y.size())
-                    print('dis', discriminator_output)
                     loss = adversarial_loss(discriminator_output, (y != 0.0).float())
                 else:
                     loss = classified_loss(discriminator_output, y.long())
