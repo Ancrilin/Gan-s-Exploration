@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import torch
 from sklearn.metrics import roc_curve, auc
+from sklearn.manifold import TSNE
 
 from processor.base_processor import BaseProcessor
 
@@ -76,6 +77,15 @@ def my_plot_roc(y_true, y_score, save_path):
     plt.xlabel('FPR')
     plt.savefig(save_path)
     plt.show()
+
+def plot_train_test(train_feature, test_feature, save_path):
+    dim_train_feature = TSNE(2, verbose=1).fit_transform(train_feature)
+    dim_test_feature = TSNE(2, verbose=1).fit_transform(test_feature)
+    plt.title('train_test_distribution')
+    plt.scatter(dim_train_feature[:, 0], dim_train_feature[:, 1], color='red', label='train_feature', s=3)
+    plt.scatter(dim_test_feature[:, 0], dim_test_feature[:, 1], color='blue', label='test_feature', s=3)
+    plt.legend()
+    plt.savefig(save_path + 'train_test_distribution.png')
 
 
 

@@ -27,7 +27,7 @@ from processor.oos_processor import OOSProcessor
 from processor.smp_processor import SMPProcessor
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
 from utils import convert_to_int_by_threshold
-from utils.visualization import scatter_plot, my_plot_roc
+from utils.visualization import scatter_plot, my_plot_roc, plot_train_test
 from utils.tool import ErrorRateAt95Recall, save_result, save_feature
 
 SEED = 123
@@ -502,7 +502,7 @@ def main(args):
         dev_dataset = OOSDataset(dev_features)
 
         train_result = train(train_dataset, dev_dataset)
-        save_feature(train_result['all_features'], os.path.join(args.output_dir, 'train_feature'))
+        # save_feature(train_result['all_features'], os.path.join(args.output_dir, 'train_feature'))
 
 
     if args.do_eval:
@@ -548,7 +548,7 @@ def main(args):
         my_plot_roc(test_result['all_binary_y'], test_result['y_score'],
                     os.path.join(args.output_dir, 'roc_curve.png'))
         save_result(test_result, os.path.join(args.output_dir, 'test_result'))
-        save_feature(test_result['all_features'], os.path.join(args.output_dir, 'test_feature'))
+        # save_feature(test_result['all_features'], os.path.join(args.output_dir, 'test_feature'))
 
         # 输出错误cases
         if config['dataset'] == 'oos-eval':
@@ -591,6 +591,7 @@ def main(args):
             fig.savefig(os.path.join(args.output_dir, 'plot.png'))
             fig.show()
             freeze_data['feature_label'] = data
+            # plot_train_test(train_result['all_features'], test_result['all_features'], args.output_dir)
 
     with open(os.path.join(config['output_dir'], 'freeze_data.pkl'), 'wb') as f:
         pickle.dump(freeze_data, f)
