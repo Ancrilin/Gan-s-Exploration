@@ -302,6 +302,7 @@ def main(args):
         result['oos_ind_f_score'] = oos_ind_fscore
         result['score'] = y_score
         result['y_score'] = y_score
+        result['all_pred'] = all_detection_binary_preds
         result['auc'] = roc_auc_score(all_binary_y, y_score)
 
 
