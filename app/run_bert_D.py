@@ -426,6 +426,9 @@ if __name__ == '__main__':
     parser.add_argument('--do_test', action='store_true',
                         help='Do validation on testset step')
 
+    parser.add_argument('--do_vis', action='store_true',
+                        help='Do visualization.')
+
     parser.add_argument('--output_dir', required=True,
                         help='The output directory saving model and logging file.')
 
