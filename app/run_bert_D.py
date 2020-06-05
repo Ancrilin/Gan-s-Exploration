@@ -435,6 +435,12 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=4e-5,
                         help="Learning rate for Discriminator.")
 
+    parser.add_argument('--feature_dim', default=768, type=int,
+                        help='The Dimension of feature vector for Generator output and Discriminator input.')
+
+    parser.add_argument('--D_Wf_dim', default=512, type=int,
+                        help='The Dimension of Wf for Discriminator.')
+
     parser.add_argument('--seed', default=123, type=int)
 
     parser.add_argument('--fine_tune', action='store_true',
