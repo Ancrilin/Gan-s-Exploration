@@ -233,6 +233,7 @@ def main(args):
         result['oos_ind_recall'] = oos_ind_recall
         result['oos_ind_f_score'] = oos_ind_fscore
         result['y_score'] = y_score
+        result['auc'] = roc_auc_score(all_binary_y, y_score)
 
         return result
 
@@ -301,6 +302,7 @@ def main(args):
         result['oos_ind_f_score'] = oos_ind_fscore
         result['score'] = y_score
         result['y_score'] = y_score
+        result['auc'] = roc_auc_score(all_binary_y, y_score)
 
 
         freeze_data['test_all_y'] = all_y.tolist()

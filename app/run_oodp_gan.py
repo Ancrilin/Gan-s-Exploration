@@ -16,6 +16,7 @@ from torch.utils.data.dataloader import DataLoader
 from transformers import BertModel
 from transformers.optimization import AdamW
 from importlib import import_module
+from sklearn.metrics import roc_auc_score
 
 import metrics
 from config import Config
@@ -258,6 +259,7 @@ def main(args):
                 logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
                 logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
                 logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+                logger.info('valid_auc: {}'.format(eval_result['auc']))
                 logger.info(
                     'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
@@ -355,6 +357,7 @@ def main(args):
         result['oos_ind_recall'] = oos_ind_recall
         result['oos_ind_f_score'] = oos_ind_fscore
         result['y_score'] = y_score
+        result['auc'] = roc_auc_score(all_binary_y, y_score)
         if n_class > 2:
             result['class_loss'] = class_loss
             result['class_acc'] = class_acc
@@ -447,6 +450,7 @@ def main(args):
         result['oos_ind_f_score'] = oos_ind_fscore
         result['score'] = y_score
         result['y_score'] = y_score
+        result['auc'] = roc_auc_score(all_binary_y, y_score)
         if n_class > 2:
             result['class_loss'] = class_loss
             result['class_acc'] = class_acc
@@ -518,6 +522,7 @@ def main(args):
         logger.info('eval_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
         logger.info('eval_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
         logger.info('eval_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+        logger.info('eval_auc: {}'.format(eval_result['auc']))
         logger.info(
             'eval_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
@@ -538,6 +543,7 @@ def main(args):
         logger.info('test_ood_ind_precision: {}'.format(test_result['oos_ind_precision']))
         logger.info('test_ood_ind_recall: {}'.format(test_result['oos_ind_recall']))
         logger.info('test_ood_ind_f_score: {}'.format(test_result['oos_ind_f_score']))
+        logger.info('test_auc: {}'.format(eval_result['auc']))
         logger.info('test_fpr95: {}'.format(ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])))
         my_plot_roc(test_result['all_binary_y'], test_result['y_score'],
                     os.path.join(args.output_dir, 'roc_curve.png'))
