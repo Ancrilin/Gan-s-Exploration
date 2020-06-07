@@ -196,7 +196,7 @@ def main(args):
                 fake_discriminator_output = D.detect_only(fake_feature)
                 fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
                 fake_loss.backward()
-                optimizer_D.step()
+                optimizer_D.step(retain_graph=True)
 
                 if args.fine_tune:
                     optimizer_E.step()
