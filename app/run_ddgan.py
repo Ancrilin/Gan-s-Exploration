@@ -225,7 +225,7 @@ def main(args):
                 loss_dector_fake = adversarial_loss(detector(fake_vector), fake_label)       # fake sample is ood
                 real_vector = D.get_vector(real_feature)
                 loss_real = adversarial_loss(detector(real_vector), (y != 0.0).float().unsqueeze(1))
-                detector_loss = loss_dector_fake + loss_real
+                detector_loss = args.beta * loss_dector_fake + (1 - args.beta) * loss_real
                 detector_loss.backward()
                 optimizer_detector.step()
 
@@ -692,6 +692,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, required=True,
                         choices={'gan', 'dgan', 'lstm_gan', 'cnn_gan'},
                         help='choose gan model')
+    parser.add_argument('--beta', type=float, default=0.1)
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
