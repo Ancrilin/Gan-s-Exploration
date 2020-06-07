@@ -44,6 +44,9 @@ class Discriminator(nn.Module):
             return f_vector, discriminator_output
         return discriminator_output
 
+    def get_vector(self, x):
+        return self.model(x)
+
 
 class Generator(nn.Module):
     def __init__(self, config: dict):
