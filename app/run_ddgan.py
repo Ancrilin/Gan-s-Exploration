@@ -98,6 +98,7 @@ def main(args):
 
     logger.info('Discriminator: {}'.format(D))
     logger.info('Generator: {}'.format(G))
+    logger.info('Detector: {}'.format(detector))
 
     if args.fine_tune:
         for param in E.parameters():
@@ -220,9 +221,9 @@ def main(args):
                 else:
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
-                loss_dector_fake = detector(fake_feature, fake_label)       # fake sample is ood
+                loss_dector_fake = adversarial_loss(detector(fake_feature), fake_label)       # fake sample is ood
                 real_vector = D.get_vector(real_feature)
-                loss_real = detector(real_vector, (y != 0.0).float().unsqueeze(1))
+                loss_real = adversarial_loss(detector(real_vector), (y != 0.0).float().unsqueeze(1))
                 detector_loss = loss_dector_fake + loss_real
                 detector_loss.backward()
                 optimizer_detector.step()
