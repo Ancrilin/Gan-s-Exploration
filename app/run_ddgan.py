@@ -182,7 +182,7 @@ def main(args):
                 real_f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
                 # discriminator_output = discriminator_output.squeeze()
                 real_loss = adversarial_loss(discriminator_output, valid_label)
-                real_loss.backward()
+                real_loss.backward(retain_graph=True)
 
                 if args.do_vis:
                     all_features.append(real_f_vector.detach())
@@ -196,7 +196,7 @@ def main(args):
                 fake_discriminator_output = D.detect_only(fake_feature)
                 fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
                 fake_loss.backward()
-                optimizer_D.step(retain_graph=True)
+                optimizer_D.step()
 
                 if args.fine_tune:
                     optimizer_E.step()
