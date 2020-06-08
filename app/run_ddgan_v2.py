@@ -23,7 +23,6 @@ from config import Config
 from data_utils import OOSDataset
 from logger import Logger
 from metrics import plot_confusion_matrix
-from model.detector import Detector_v2
 from processor.oos_processor import OOSProcessor
 from processor.smp_processor import SMPProcessor
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
@@ -90,11 +89,15 @@ def main(args):
     logger.info(config)
 
     model = import_module('model.' + args.model)
+    model_d = import_module('model.' + 'detector')
 
     D = model.Discriminator(config)
     G = model.Generator(config)
     E = BertModel.from_pretrained(bert_config['PreTrainModelDir'])  # Bert encoder
-    detector = Detector_v2(config)
+    if args.loss == 'v1':
+        detector = model_d.Detector(config)
+    else:
+        detector = model_d.Detector_v2(config)
 
     logger.info('Discriminator: {}'.format(D))
     logger.info('Generator: {}'.format(G))
