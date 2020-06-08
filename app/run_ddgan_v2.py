@@ -359,7 +359,7 @@ def main(args):
                         detector_out = detector(real_feature)
                         all_detection_preds.append(detector_out)
                     else:
-                        detector_out = detector_out(real_feature)
+                        detector_out = detector(real_feature)
                         all_logit.append(detector_out)
                         all_detection_preds.append(torch.argmax(detector_out, 1))
 
@@ -463,7 +463,7 @@ def main(args):
                         detector_out = detector(real_feature)
                         all_detection_preds.append(detector_out)
                     else:
-                        detector_out = detector_out(real_feature)
+                        detector_out = detector(real_feature)
                         all_logit.append(detector_out)
                         all_detection_preds.append(torch.argmax(detector_out, 1))
                 # if args.do_vis:
