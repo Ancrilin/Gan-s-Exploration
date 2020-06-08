@@ -222,7 +222,7 @@ def main(args):
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 fake_vector = D.get_vector(fake_feature)
-                loss_dector_fake = adversarial_loss(detector(fake_vector), fake_label)       # fake sample is ood
+                # loss_dector_fake = adversarial_loss(detector(fake_vector), fake_label)       # fake sample is ood
                 real_vector = D.get_vector(real_feature)
                 # loss_real = adversarial_loss(detector(real_vector), (y != 0.0).float())
                 # detector_loss = args.beta * loss_dector_fake + (1 - args.beta) * loss_real
