@@ -224,8 +224,10 @@ def main(args):
                 fake_vector = D.get_vector(fake_feature)
                 loss_dector_fake = adversarial_loss(detector(fake_vector), fake_label)       # fake sample is ood
                 real_vector = D.get_vector(real_feature)
-                loss_real = adversarial_loss(detector(real_vector), (y != 0.0).float())
-                detector_loss = args.beta * loss_dector_fake + (1 - args.beta) * loss_real
+                # loss_real = adversarial_loss(detector(real_vector), (y != 0.0).float())
+                # detector_loss = args.beta * loss_dector_fake + (1 - args.beta) * loss_real
+                loss_real = adversarial_loss(detector(real_feature), (y != 0.0).float())
+                detector_loss = loss_real
                 detector_loss.backward()
                 optimizer_detector.step()
 
@@ -348,7 +350,8 @@ def main(args):
                     # f_vector, discriminator_output = D.detect_only(real_feature, return_feature=True)
                     # all_detection_preds.append(discriminator_output)
                     f_vector = D.get_vector(real_feature)
-                    detector_out = detector(f_vector)
+                    # detector_out = detector(f_vector)
+                    detector_out = detector(real_feature)
                     all_detection_preds.append(detector_out)
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
@@ -438,7 +441,8 @@ def main(args):
 
                 else:
                     f_vector = D.get_vector(real_feature)
-                    detector_out = detector(f_vector)
+                    # detector_out = detector(f_vector)
+                    detector_out = detector(real_feature)
                     all_detection_preds.append(detector_out)
                 if args.do_vis:
                     all_features.append(f_vector)
