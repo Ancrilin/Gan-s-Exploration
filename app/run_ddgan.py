@@ -124,6 +124,7 @@ def main(args):
         # Loss function
         adversarial_loss = torch.nn.BCELoss().to(device)
         classified_loss = torch.nn.CrossEntropyLoss().to(device)
+        adversarial_loss_v2 = torch.nn.CrossEntropyLoss().to(device)
 
         # Optimizers
         optimizer_G = torch.optim.Adam(G.parameters(), lr=args.G_lr)  # optimizer for generator
@@ -226,7 +227,10 @@ def main(args):
                 real_vector = D.get_vector(real_feature)
                 # loss_real = adversarial_loss(detector(real_vector), (y != 0.0).float())
                 # detector_loss = args.beta * loss_dector_fake + (1 - args.beta) * loss_real
-                loss_real = adversarial_loss(detector(real_feature), (y != 0.0).float())
+                if args.loss == 'v1':
+                    loss_real = adversarial_loss(detector(real_feature), (y != 0.0).float())
+                else:
+                    loss_real = adversarial_loss_v2(detector(real_feature), y.long())
                 detector_loss = loss_real
                 detector_loss.backward()
                 optimizer_detector.step()
@@ -317,6 +321,7 @@ def main(args):
 
         # Loss function
         detection_loss = torch.nn.BCELoss().to(device)
+        detection_loss_v2 = torch.nn.CrossEntropyLoss().to(device)
         classified_loss = torch.nn.CrossEntropyLoss(ignore_index=0).to(device)
 
         G.eval()
@@ -326,6 +331,7 @@ def main(args):
 
         all_detection_preds = []
         all_class_preds = []
+        all_logit = []
 
         for sample in tqdm.tqdm(dev_dataloader):
             sample = (i.to(device) for i in sample)
@@ -351,16 +357,28 @@ def main(args):
                     # all_detection_preds.append(discriminator_output)
                     f_vector = D.get_vector(real_feature)
                     # detector_out = detector(f_vector)
-                    detector_out = detector(real_feature)
-                    all_detection_preds.append(detector_out)
+                    if args.loss == 'v1':
+                        detector_out = detector(real_feature)
+                        all_detection_preds.append(detector_out)
+                    else:
+                        detector_out = detector(real_feature)
+                        all_logit.append(detector_out)
+                        all_detection_preds.append((torch.argmax(detector_out, 1)))
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
-        all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        if args.loss == 'v1':
+            all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        else:
+            all_detection_binary_preds = all_detection_preds
+            all_logit = torch.cat(all_logit, 0).cpu()
 
         # 计算损失
-        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        if args.loss == 'v1':
+            detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        else:
+            detection_loss = detection_loss_v2(all_logit, all_y.long())
         result['detection_loss'] = detection_loss
 
         if n_class > 2:
@@ -410,6 +428,7 @@ def main(args):
 
         # Loss function
         detection_loss = torch.nn.BCELoss().to(device)
+        detection_loss_v2 = torch.nn.CrossEntropyLoss().to(device)
         classified_loss = torch.nn.CrossEntropyLoss(ignore_index=0).to(device)
 
         G.eval()
@@ -420,6 +439,7 @@ def main(args):
         all_detection_preds = []
         all_class_preds = []
         all_features = []
+        all_logit = []
 
         for sample in tqdm.tqdm(test_dataloader):
             sample = (i.to(device) for i in sample)
@@ -442,18 +462,30 @@ def main(args):
                 else:
                     f_vector = D.get_vector(real_feature)
                     # detector_out = detector(f_vector)
-                    detector_out = detector(real_feature)
-                    all_detection_preds.append(detector_out)
+                    if args.loss == 'v1':
+                        detector_out = detector(real_feature)
+                        all_detection_preds.append(detector_out)
+                    else:
+                        detector_out = detector(real_feature)
+                        all_logit.append(detector_out)
+                        all_detection_preds.append((torch.argmax(detector_out, 1)))
                 if args.do_vis:
                     all_features.append(f_vector)
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
-        all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        if args.loss == 'v1':
+            all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        else:
+            all_detection_binary_preds = all_detection_preds
+            all_logit = torch.cat(all_logit, 0).cpu()
 
         # 计算损失
-        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        if args.loss == 'v1':
+            detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
+        else:
+            detection_loss = detection_loss_v2(all_logit, all_y.long())
         result['detection_loss'] = detection_loss
 
         if n_class > 2:
@@ -697,6 +729,8 @@ if __name__ == '__main__':
                         choices={'gan', 'dgan', 'lstm_gan', 'cnn_gan'},
                         help='choose gan model')
     parser.add_argument('--beta', type=float, default=0.1)
+    parser.add_argument('--loss', type=str, default='v1',
+                        choices={'v1', 'v2'})
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)

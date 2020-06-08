@@ -6,10 +6,15 @@ import torch.nn.functional as F
 class Detector(nn.Module):
     def __init__(self, config):
         super(Detector, self).__init__()
-        self.detect = nn.Sequential(
-            nn.Linear(config['detect_dim'], 1),
-            nn.Sigmoid()
-        )
+        if config['loss'] == 'v1':
+            self.detect = nn.Sequential(
+                nn.Linear(config['detect_dim'], 1),
+                nn.Sigmoid()
+            )
+        else:
+            self.detect = nn.Sequential(
+                nn.Linear(config['detect_dim'], 2)
+            )
 
     def forward(self, x):
         out = self.detect(x)
