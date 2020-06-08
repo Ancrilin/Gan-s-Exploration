@@ -23,7 +23,7 @@ from config import Config
 from data_utils import OOSDataset
 from logger import Logger
 from metrics import plot_confusion_matrix
-from model.detector import Detector
+from model.detector import Detector_v2
 from processor.oos_processor import OOSProcessor
 from processor.smp_processor import SMPProcessor
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
@@ -94,7 +94,7 @@ def main(args):
     D = model.Discriminator(config)
     G = model.Generator(config)
     E = BertModel.from_pretrained(bert_config['PreTrainModelDir'])  # Bert encoder
-    detector = Detector(config)
+    detector = Detector_v2(config)
 
     logger.info('Discriminator: {}'.format(D))
     logger.info('Generator: {}'.format(G))
@@ -107,8 +107,8 @@ def main(args):
         for param in E.parameters():
             param.requires_grad = False
 
-    D.to(device)
-    G.to(device)
+    # D.to(device)
+    # G.to(device)
     E.to(device)
     detector.to(device)
 
@@ -123,11 +123,12 @@ def main(args):
         early_stopping = EarlyStopping(args.patience, logger=logger)
         # Loss function
         adversarial_loss = torch.nn.BCELoss().to(device)
+        adversarial_loss_v2 = torch.nn.CrossEntropyLoss().to(device)
         classified_loss = torch.nn.CrossEntropyLoss().to(device)
 
         # Optimizers
-        optimizer_G = torch.optim.Adam(G.parameters(), lr=args.G_lr)  # optimizer for generator
-        optimizer_D = torch.optim.Adam(D.parameters(), lr=args.D_lr)  # optimizer for discriminator
+        # optimizer_G = torch.optim.Adam(G.parameters(), lr=args.G_lr)  # optimizer for generator
+        # optimizer_D = torch.optim.Adam(D.parameters(), lr=args.D_lr)  # optimizer for discriminator
         optimizer_E = AdamW(E.parameters(), args.bert_lr)
         optimizer_detector = torch.optim.Adam(detector.parameters(), lr=args.detector_lr)
 
@@ -177,42 +178,42 @@ def main(args):
                 sequence_output, pooled_output = E(token, mask, type_ids)
                 real_feature = pooled_output
 
-                # train D on real
-                optimizer_D.zero_grad()
-                real_f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
-                # discriminator_output = discriminator_output.squeeze()
-                real_loss = adversarial_loss(discriminator_output, valid_label)
-                real_loss.backward(retain_graph=True)
+                # # train D on real
+                # optimizer_D.zero_grad()
+                # real_f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
+                # # discriminator_output = discriminator_output.squeeze()
+                # real_loss = adversarial_loss(discriminator_output, valid_label)
+                # real_loss.backward(retain_graph=True)
+                #
+                # if args.do_vis:
+                #     all_features.append(real_f_vector.detach())
+                #
+                # # # train D on fake
+                # if args.model == 'lstm_gan' or args.model == 'cnn_gan':
+                #     z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
+                # else:
+                #     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                # fake_feature = G(z).detach()
+                # fake_discriminator_output = D.detect_only(fake_feature)
+                # fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
+                # fake_loss.backward()
+                # optimizer_D.step()
 
-                if args.do_vis:
-                    all_features.append(real_f_vector.detach())
-
-                # # train D on fake
-                if args.model == 'lstm_gan' or args.model == 'cnn_gan':
-                    z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
-                else:
-                    z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
-                fake_feature = G(z).detach()
-                fake_discriminator_output = D.detect_only(fake_feature)
-                fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
-                fake_loss.backward()
-                optimizer_D.step()
-
-                if args.fine_tune:
-                    optimizer_E.step()
+                # if args.fine_tune:
+                #     optimizer_E.step()
 
                 # train G
-                optimizer_G.zero_grad()
-                if args.model == 'lstm_gan' or args.model == 'cnn_gan':
-                    z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
-                else:
-                    z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
-                fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
-                gd_loss = adversarial_loss(D_decision, valid_label)
-                fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
-                g_loss = gd_loss + 0 * fm_loss
-                g_loss.backward()
-                optimizer_G.step()
+                # optimizer_G.zero_grad()
+                # if args.model == 'lstm_gan' or args.model == 'cnn_gan':
+                #     z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
+                # else:
+                #     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                # fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
+                # gd_loss = adversarial_loss(D_decision, valid_label)
+                # fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
+                # g_loss = gd_loss + 0 * fm_loss
+                # g_loss.backward()
+                # optimizer_G.step()
 
                 # train detector
                 optimizer_detector.zero_grad()
@@ -220,24 +221,27 @@ def main(args):
                     z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
                 else:
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
-                fake_feature = G(z).detach()
-                fake_vector = D.get_vector(fake_feature)
-                loss_dector_fake = adversarial_loss(detector(fake_vector), fake_label)       # fake sample is ood
-                real_vector = D.get_vector(real_feature)
-                loss_real = adversarial_loss(detector(real_vector), (y != 0.0).float())
-                detector_loss = args.beta * loss_dector_fake + (1 - args.beta) * loss_real
+                # fake_feature = G(z).detach()
+                # fake_vector = D.get_vector(fake_feature)
+                # loss_dector_fake = adversarial_loss(detector(fake_vector), fake_label)       # fake sample is ood
+                # real_vector = D.get_vector(real_feature)
+                if args.loss == 'v1':
+                    loss_real = adversarial_loss(detector(real_feature), y.float())
+                else:
+                    loss_real = adversarial_loss_v2(detector(real_feature), y.long())
+                detector_loss = loss_real
                 detector_loss.backward()
                 optimizer_detector.step()
 
-                # if args.fine_tune:
-                #     optimizer_E.step()
+                if args.fine_tune:
+                    optimizer_E.step()
 
                 global_step += 1
 
-                D_fake_loss += fake_loss.detach()
-                D_real_loss += real_loss.detach()
-                G_train_loss += g_loss.detach() + fm_loss.detach()
-                FM_train_loss += fm_loss.detach()
+                # D_fake_loss += fake_loss.detach()
+                # D_real_loss += real_loss.detach()
+                # G_train_loss += g_loss.detach() + fm_loss.detach()
+                # FM_train_loss += fm_loss.detach()
                 detector_train_loss += detector_loss
 
             logger.info('[Epoch {}] Train: D_fake_loss: {}'.format(i, D_fake_loss / n_sample))
@@ -315,15 +319,17 @@ def main(args):
 
         # Loss function
         detection_loss = torch.nn.BCELoss().to(device)
+        detection_loss_v2 = torch.nn.CrossEntropyLoss().to(device)
         classified_loss = torch.nn.CrossEntropyLoss(ignore_index=0).to(device)
 
-        G.eval()
-        D.eval()
+        # G.eval()
+        # D.eval()
         E.eval()
         detector.eval()
 
         all_detection_preds = []
         all_class_preds = []
+        all_logit = []
 
         for sample in tqdm.tqdm(dev_dataloader):
             sample = (i.to(device) for i in sample)
@@ -339,26 +345,39 @@ def main(args):
 
                 # 大于2表示除了训练判别器还要训练分类器
                 if n_class > 2:
-                    f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
-                    all_detection_preds.append(discriminator_output)
-                    all_class_preds.append(classification_output)
+                    # f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
+                    # all_detection_preds.append(discriminator_output)
+                    # all_class_preds.append(classification_output)
+                    pass
 
                 # 只预测判别器
                 else:
                     # f_vector, discriminator_output = D.detect_only(real_feature, return_feature=True)
                     # all_detection_preds.append(discriminator_output)
-                    f_vector = D.get_vector(real_feature)
-                    detector_out = detector(f_vector)
-                    all_detection_preds.append(detector_out)
+                    # f_vector = D.get_vector(real_feature)
+                    if args.loss == 'v1':
+                        detector_out = detector(real_feature)
+                        all_detection_preds.append(detector_out)
+                    else:
+                        detector_out = detector_out(real_feature)
+                        all_logit.append(detector_out)
+                        all_detection_preds.append(torch.argmax(detector_out, 1))
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
-        all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        if args.loss == 'v1':
+            all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        else:
+            all_detection_binary_preds = all_detection_preds
+            all_logit = torch.cat(all_logit, 0).cpu()
 
         # 计算损失
-        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
-        result['detection_loss'] = detection_loss
+        if args.loss == 'v1':
+            loss = detection_loss(all_detection_preds, all_binary_y.float())
+        else:
+            loss = detection_loss_v2(all_logit, all_y.long())
+        result['detection_loss'] = loss
 
         if n_class > 2:
             class_one_hot_preds = torch.cat(all_class_preds, 0).detach().cpu()  # one hot label
@@ -407,6 +426,7 @@ def main(args):
 
         # Loss function
         detection_loss = torch.nn.BCELoss().to(device)
+        detection_loss_v2 = torch.nn.CrossEntropyLoss().to(device)
         classified_loss = torch.nn.CrossEntropyLoss(ignore_index=0).to(device)
 
         G.eval()
@@ -417,6 +437,7 @@ def main(args):
         all_detection_preds = []
         all_class_preds = []
         all_features = []
+        all_logit = []
 
         for sample in tqdm.tqdm(test_dataloader):
             sample = (i.to(device) for i in sample)
@@ -432,25 +453,37 @@ def main(args):
 
                 # 大于2表示除了训练判别器还要训练分类器
                 if n_class > 2:
-                    f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
-                    all_detection_preds.append(discriminator_output)
-                    all_class_preds.append(classification_output)
+                    # f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
+                    # all_detection_preds.append(discriminator_output)
+                    # all_class_preds.append(classification_output)
+                    pass
 
                 else:
-                    f_vector = D.get_vector(real_feature)
-                    detector_out = detector(f_vector)
-                    all_detection_preds.append(detector_out)
-                if args.do_vis:
-                    all_features.append(f_vector)
+                    if args.loss == 'v1':
+                        detector_out = detector(real_feature)
+                        all_detection_preds.append(detector_out)
+                    else:
+                        detector_out = detector_out(real_feature)
+                        all_logit.append(detector_out)
+                        all_detection_preds.append(torch.argmax(detector_out, 1))
+                # if args.do_vis:
+                #     all_features.append(f_vector)
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
-        all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        if args.loss == 'v1':
+            all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
+        else:
+            all_detection_binary_preds = all_detection_preds
+            all_logit = torch.cat(all_logit, 0).cpu()
 
         # 计算损失
-        detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
-        result['detection_loss'] = detection_loss
+        if args.loss == 'v1':
+            loss = detection_loss(all_detection_preds, all_binary_y.float())
+        else:
+            loss = detection_loss_v2(all_logit, all_y.long())
+        result['detection_loss'] = loss
 
         if n_class > 2:
             class_one_hot_preds = torch.cat(all_class_preds, 0).detach().cpu()  # one hot label
@@ -693,6 +726,8 @@ if __name__ == '__main__':
                         choices={'gan', 'dgan', 'lstm_gan', 'cnn_gan'},
                         help='choose gan model')
     parser.add_argument('--beta', type=float, default=0.1)
+    parser.add_argument('--loss', type=str, default='v1',
+                        choices={'v1', 'v2'})
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
