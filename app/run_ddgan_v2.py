@@ -181,42 +181,44 @@ def main(args):
                 sequence_output, pooled_output = E(token, mask, type_ids)
                 real_feature = pooled_output
 
-                # # train D on real
-                # optimizer_D.zero_grad()
-                # real_f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
-                # # discriminator_output = discriminator_output.squeeze()
-                # real_loss = adversarial_loss(discriminator_output, valid_label)
-                # real_loss.backward(retain_graph=True)
-                #
-                # if args.do_vis:
-                #     all_features.append(real_f_vector.detach())
-                #
-                # # # train D on fake
-                # if args.model == 'lstm_gan' or args.model == 'cnn_gan':
-                #     z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
-                # else:
-                #     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
-                # fake_feature = G(z).detach()
-                # fake_discriminator_output = D.detect_only(fake_feature)
-                # fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
-                # fake_loss.backward()
-                # optimizer_D.step()
+                # train D on real
+                optimizer_D.zero_grad()
+                real_f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
+                # discriminator_output = discriminator_output.squeeze()
+                real_loss = adversarial_loss(discriminator_output, valid_label)
+                real_loss.backward(retain_graph=True)
+
+                if args.do_vis:
+                    all_features.append(real_f_vector.detach())
+
+                # # train D on fake
+                if args.model == 'lstm_gan' or args.model == 'cnn_gan':
+                    z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
+                else:
+                    z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                fake_feature = G(z).detach()
+                fake_discriminator_output = D.detect_only(fake_feature)
+                fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
+                fake_loss.backward()
+                optimizer_D.step()
 
                 # if args.fine_tune:
                 #     optimizer_E.step()
 
                 # train G
-                # optimizer_G.zero_grad()
-                # if args.model == 'lstm_gan' or args.model == 'cnn_gan':
-                #     z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
-                # else:
-                #     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
-                # fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
-                # gd_loss = adversarial_loss(D_decision, valid_label)
-                # fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
-                # g_loss = gd_loss + 0 * fm_loss
-                # g_loss.backward()
-                # optimizer_G.step()
+                optimizer_G.zero_grad()
+                if args.model == 'lstm_gan' or args.model == 'cnn_gan':
+                    z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
+                else:
+                    z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
+                gd_loss = adversarial_loss(D_decision, valid_label)
+                fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
+                g_loss = gd_loss + 0 * fm_loss
+                g_loss.backward()
+                optimizer_G.step()
+
+                optimizer_E.zero_grad()
 
                 # train detector
                 optimizer_detector.zero_grad()
@@ -224,15 +226,16 @@ def main(args):
                     z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
                 else:
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
-                # fake_feature = G(z).detach()
-                # fake_vector = D.get_vector(fake_feature)
-                # loss_dector_fake = adversarial_loss(detector(fake_vector), fake_label)       # fake sample is ood
-                # real_vector = D.get_vector(real_feature)
+                fake_feature = G(z).detach()
+                if args.loss == 'v1':
+                    loss_fake = adversarial_loss(detector(fake_feature), fake_label)       # fake sample is ood
+                else:
+                    loss_fake = adversarial_loss_v2(detector(fake_feature), y.long())
                 if args.loss == 'v1':
                     loss_real = adversarial_loss(detector(real_feature), y.float())
                 else:
                     loss_real = adversarial_loss_v2(detector(real_feature), y.long())
-                detector_loss = loss_real
+                detector_loss = args.beta * loss_fake + (1 - args.beta) * loss_real
                 detector_loss.backward()
                 optimizer_detector.step()
 
@@ -241,10 +244,10 @@ def main(args):
 
                 global_step += 1
 
-                # D_fake_loss += fake_loss.detach()
-                # D_real_loss += real_loss.detach()
-                # G_train_loss += g_loss.detach() + fm_loss.detach()
-                # FM_train_loss += fm_loss.detach()
+                D_fake_loss += fake_loss.detach()
+                D_real_loss += real_loss.detach()
+                G_train_loss += g_loss.detach() + fm_loss.detach()
+                FM_train_loss += fm_loss.detach()
                 detector_train_loss += detector_loss
 
             logger.info('[Epoch {}] Train: D_fake_loss: {}'.format(i, D_fake_loss / n_sample))
