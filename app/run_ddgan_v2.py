@@ -239,6 +239,7 @@ def main(args):
                     detector_loss = args.beta * loss_fake + (1 - args.beta) * loss_real
                 else:
                     detector_loss = args.beta * loss_fake + loss_real
+                    detector_loss = args.sigma * detector_loss
                 detector_loss.backward()
                 optimizer_detector.step()
 
@@ -739,6 +740,7 @@ if __name__ == '__main__':
                         choices={'v1', 'v2'})
     parser.add_argument('--detect_loss', type=str, default='v1',
                         choices={'v1', 'v2'})
+    parser.add_argument('--sigma', type=float, default=1.0)
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
