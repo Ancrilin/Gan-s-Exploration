@@ -110,8 +110,8 @@ def main(args):
         for param in E.parameters():
             param.requires_grad = False
 
-    # D.to(device)
-    # G.to(device)
+    D.to(device)
+    G.to(device)
     E.to(device)
     detector.to(device)
 
@@ -130,8 +130,8 @@ def main(args):
         classified_loss = torch.nn.CrossEntropyLoss().to(device)
 
         # Optimizers
-        # optimizer_G = torch.optim.Adam(G.parameters(), lr=args.G_lr)  # optimizer for generator
-        # optimizer_D = torch.optim.Adam(D.parameters(), lr=args.D_lr)  # optimizer for discriminator
+        optimizer_G = torch.optim.Adam(G.parameters(), lr=args.G_lr)  # optimizer for generator
+        optimizer_D = torch.optim.Adam(D.parameters(), lr=args.D_lr)  # optimizer for discriminator
         optimizer_E = AdamW(E.parameters(), args.bert_lr)
         optimizer_detector = torch.optim.Adam(detector.parameters(), lr=args.detector_lr)
 
