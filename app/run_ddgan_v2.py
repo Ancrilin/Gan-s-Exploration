@@ -186,7 +186,7 @@ def main(args):
                 real_f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
                 # discriminator_output = discriminator_output.squeeze()
                 real_loss = adversarial_loss(discriminator_output, valid_label)
-                real_loss.backward()
+                real_loss.backward(retain_graph=True)
 
                 if args.do_vis:
                     all_features.append(real_f_vector.detach())
