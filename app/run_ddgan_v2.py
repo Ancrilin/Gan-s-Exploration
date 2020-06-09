@@ -230,7 +230,7 @@ def main(args):
                 if args.loss == 'v1':
                     loss_fake = adversarial_loss(detector(fake_feature), fake_label)       # fake sample is ood
                 else:
-                    loss_fake = adversarial_loss_v2(detector(fake_feature), fake_label.long())
+                    loss_fake = adversarial_loss_v2(detector(fake_feature), fake_label.long().squeeze())
                 if args.loss == 'v1':
                     loss_real = adversarial_loss(detector(real_feature), y.float())
                 else:
