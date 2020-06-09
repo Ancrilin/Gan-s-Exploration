@@ -235,7 +235,10 @@ def main(args):
                     loss_real = adversarial_loss(detector(real_feature), y.float())
                 else:
                     loss_real = adversarial_loss_v2(detector(real_feature), y.long())
-                detector_loss = args.beta * loss_fake + (1 - args.beta) * loss_real
+                if args.detect_loss == 'v1':
+                    detector_loss = args.beta * loss_fake + (1 - args.beta) * loss_real
+                else:
+                    detector_loss = args.beta * loss_fake + loss_real
                 detector_loss.backward()
                 optimizer_detector.step()
 
@@ -733,6 +736,8 @@ if __name__ == '__main__':
                         help='choose gan model')
     parser.add_argument('--beta', type=float, default=0.1)
     parser.add_argument('--loss', type=str, default='v1',
+                        choices={'v1', 'v2'})
+    parser.add_argument('--detect_loss', type=str, default='v1',
                         choices={'v1', 'v2'})
 
     args = parser.parse_args()
