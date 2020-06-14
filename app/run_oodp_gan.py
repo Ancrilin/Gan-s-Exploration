@@ -634,7 +634,7 @@ if __name__ == '__main__':
 
     # ------------------------bert------------------------ #
     parser.add_argument('--bert_type',
-                        choices={'bert-base-uncased', 'bert-large-uncased', 'bert-base-chinese'}, required=True,
+                        choices={'bert-base-uncased', 'bert-large-uncased', 'bert-base-chinese',}, required=True,
                         help='Type of the pre-trained BERT to be used.')
 
     # ------------------------Discriminator------------------------ #
