@@ -25,6 +25,7 @@ from logger import Logger
 from metrics import plot_confusion_matrix
 from processor.oos_processor import OOSProcessor
 from processor.smp_processor import SMPProcessor
+from processor.smp_processor_v2 import SMPProcessor_v2
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
 from utils import convert_to_int_by_threshold
 from utils.visualization import scatter_plot, my_plot_roc, plot_train_test
@@ -73,7 +74,10 @@ def main(args):
     if args.dataset == 'oos-eval':
         processor = OOSProcessor(bert_config, maxlen=32)
     elif args.dataset == 'smp':
-        processor = SMPProcessor(bert_config, maxlen=32)
+        if args.mode == -1:
+            processor = SMPProcessor(bert_config, maxlen=32)
+        else:
+            processor = SMPProcessor_v2(bert_config, maxlen=32)
     else:
         raise ValueError('The dataset {} is not supported.'.format(args.dataset))
 
@@ -493,8 +497,12 @@ def main(args):
             text_train_set = processor.read_dataset(data_path, ['train', 'oos_train'])
             text_dev_set = processor.read_dataset(data_path, ['val', 'oos_val'])
         elif config['dataset'] == 'smp':
-            text_train_set = processor.read_dataset(data_path, ['train'])
-            text_dev_set = processor.read_dataset(data_path, ['val'])
+            if args.mode != -1:
+                text_train_set = processor.read_dataset(data_path, ['train'])
+                text_dev_set = processor.read_dataset(data_path, ['val'])
+            else:
+                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen)
+                text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
 
         train_features = processor.convert_to_ids(text_train_set)
         train_dataset = OOSDataset(train_features)
@@ -512,7 +520,10 @@ def main(args):
         elif config['dataset'] == 'oos-eval':
             text_dev_set = processor.read_dataset(data_path, ['val', 'oos_val'])
         elif config['dataset'] == 'smp':
-            text_dev_set = processor.read_dataset(data_path, ['val'])
+            if args.mode != -1:
+                text_dev_set = processor.read_dataset(data_path, ['val'])
+            else:
+                text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
 
         dev_features = processor.convert_to_ids(text_dev_set)
         dev_dataset = OOSDataset(dev_features)
@@ -533,7 +544,10 @@ def main(args):
         elif config['dataset'] == 'oos-eval':
             text_test_set = processor.read_dataset(data_path, ['test', 'oos_test'])
         elif config['dataset'] == 'smp':
-            text_test_set = processor.read_dataset(data_path, ['test'])
+            if args.mode != -1:
+                text_test_set = processor.read_dataset(data_path, ['test'])
+            else:
+                text_test_set = processor.read_dataset(data_path, ['test'], args.mode, args.maxlen)
 
         test_features = processor.convert_to_ids(text_test_set)
         test_dataset = OOSDataset(test_features)
@@ -673,6 +687,10 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, required=True,
                         choices={'gan', 'dgan', 'lstm_gan', 'cnn_gan'},
                         help='choose gan model')
+
+    # data config
+    parser.add_argument('--mode', type=int, default=-1)
+    parser.add_argument('--maxlen', type=int, default=-1)
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
