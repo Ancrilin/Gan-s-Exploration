@@ -76,14 +76,17 @@ def main(args):
     elif args.dataset == 'smp':
         if args.mode == -1:
             processor = SMPProcessor(bert_config, maxlen=32)
+            print('processor')
         else:
             processor = SMPProcessor_v2(bert_config, maxlen=32)
+            print('processor_v2')
     else:
         raise ValueError('The dataset {} is not supported.'.format(args.dataset))
 
     processor.load_label(label_path)  # Adding label_to_id and id_to_label ot processor.
 
     n_class = len(processor.id_to_label)
+    print('label: ', processor.id_to_label)
     config = vars(args)  # 返回参数字典
     config['gan_save_path'] = os.path.join(args.output_dir, 'save', 'gan.pt')
     config['bert_save_path'] = os.path.join(args.output_dir, 'save', 'bert.pt')
