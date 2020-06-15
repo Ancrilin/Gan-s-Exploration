@@ -2,5 +2,5 @@ numpy
 tqdm
 pandas
 transformers==2.4.1
-scikit_learn==0.22.1
+scikit_learn==0.22.2
 torch==1.5
