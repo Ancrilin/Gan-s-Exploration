@@ -58,6 +58,7 @@ def main(args):
     logger.info('model: {}'.format(args.model))
     check_manual_seed(SEED)
     check_args(args)
+    logger.info('mode: {}'.format(args.mode))
 
     logger.info('Loading config...')
     bert_config = Config('config/bert.ini')
