@@ -501,15 +501,16 @@ def main(args):
             text_dev_set = processor.read_dataset(data_path, ['val', 'oos_val'])
         elif config['dataset'] == 'smp':
             if args.mode != -1:
-                text_train_set = processor.read_dataset(data_path, ['train'])
-                text_dev_set = processor.read_dataset(data_path, ['val'])
-            else:
-                text_train_set, text_train_len = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen)
-                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
+                text_train_set, text_train_len = processor.read_dataset(data_path, ['train'])
+                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'])
                 print('text_train_set', text_train_set)
                 print('text_train_len', text_train_len)
                 print('text_dev_set', text_dev_set)
                 print('text_dev_len', text_dev_len)
+            else:
+                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen)
+                text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
+
 
         train_features = processor.convert_to_ids(text_train_set)
         train_dataset = OOSDataset(train_features)
@@ -528,11 +529,12 @@ def main(args):
             text_dev_set = processor.read_dataset(data_path, ['val', 'oos_val'])
         elif config['dataset'] == 'smp':
             if args.mode != -1:
-                text_dev_set = processor.read_dataset(data_path, ['val'])
-            else:
-                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
+                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'])
                 print('text_dev_set', text_dev_set)
                 print('text_dev_len', text_dev_len)
+            else:
+                text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
+
 
         dev_features = processor.convert_to_ids(text_dev_set)
         dev_dataset = OOSDataset(dev_features)
@@ -554,11 +556,11 @@ def main(args):
             text_test_set = processor.read_dataset(data_path, ['test', 'oos_test'])
         elif config['dataset'] == 'smp':
             if args.mode != -1:
-                text_test_set = processor.read_dataset(data_path, ['test'])
-            else:
-                text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], args.mode, args.maxlen)
+                text_test_set, text_test_len = processor.read_dataset(data_path, ['test'])
                 print('text_test_set', text_test_set)
                 print('text_test_len', text_test_len)
+            else:
+                text_test_set = processor.read_dataset(data_path, ['test'], args.mode, args.maxlen)
 
         test_features = processor.convert_to_ids(text_test_set)
         test_dataset = OOSDataset(test_features)
