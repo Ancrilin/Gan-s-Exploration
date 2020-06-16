@@ -504,11 +504,13 @@ def main(args):
             if args.mode != -1:
                 text_train_set, text_train_len = processor.read_dataset(data_path, ['train'])
                 text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'])
+                print('--------------')
                 print('text_train_set', text_train_set)
                 print('text_train_len', text_train_len)
                 print('text_dev_set', text_dev_set)
                 print('text_dev_len', text_dev_len)
             else:
+                print('==============')
                 text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen)
                 text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
 
