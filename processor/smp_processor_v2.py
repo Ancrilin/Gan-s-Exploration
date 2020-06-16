@@ -57,7 +57,7 @@ class SMPProcessor_v2(BertProcessor):
             self.id_to_label = json.load(f)
             self.label_to_id = {label: i for i, label in enumerate(self.id_to_label)}
 
-    def parse_line(self, line: list) -> list:
+    def parse_line(self, line: dict) -> list:
         """
         :param line: [text, label]
         :return: [text_ids, mask, type_ids, label_ids]
