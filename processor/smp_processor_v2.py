@@ -32,6 +32,7 @@ class SMPProcessor_v2(BertProcessor):
         :param maxlen: 最大长度
         :return:
         """
+        text_len = {}
         dataset = []
         with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -46,8 +47,9 @@ class SMPProcessor_v2(BertProcessor):
                     continue
                 if mode == 3 and line['knowledge'] != 0:
                     continue
+                text_len[len(line['text'])] = text_len.get(len(line['text']), 0) + 1
                 dataset.append(line)
-        return dataset
+        return dataset, sorted(text_len.items(), key=lambda d:d[0], reverse=False)
 
     def load_label(self, path):
         """load label"""

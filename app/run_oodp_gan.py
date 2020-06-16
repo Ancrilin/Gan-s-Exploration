@@ -504,8 +504,10 @@ def main(args):
                 text_train_set = processor.read_dataset(data_path, ['train'])
                 text_dev_set = processor.read_dataset(data_path, ['val'])
             else:
-                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen)
-                text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
+                text_train_set, text_train_len = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen)
+                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
+                logger.info('text_train_len: {}'.format(text_train_len))
+                logger.info('text_dev_len: {}'.format(text_dev_len))
 
         train_features = processor.convert_to_ids(text_train_set)
         train_dataset = OOSDataset(train_features)
@@ -526,7 +528,8 @@ def main(args):
             if args.mode != -1:
                 text_dev_set = processor.read_dataset(data_path, ['val'])
             else:
-                text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
+                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
+                logger.info('text_dev_len: {}'.format(text_dev_len))
 
         dev_features = processor.convert_to_ids(text_dev_set)
         dev_dataset = OOSDataset(dev_features)
@@ -550,7 +553,8 @@ def main(args):
             if args.mode != -1:
                 text_test_set = processor.read_dataset(data_path, ['test'])
             else:
-                text_test_set = processor.read_dataset(data_path, ['test'], args.mode, args.maxlen)
+                text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], args.mode, args.maxlen)
+                logger.info('text_test_len: {}'.format(text_test_len))
 
         test_features = processor.convert_to_ids(text_test_set)
         test_dataset = OOSDataset(test_features)
