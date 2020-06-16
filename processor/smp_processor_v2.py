@@ -19,6 +19,7 @@ class SMPProcessor_v2(BertProcessor):
 
     def convert_to_ids(self, dataset: list) -> list:
         ids_data = []
+        print('dataset', dataset)
         for line in dataset:
             print('line', line)
             ids_data.append(self.parse_line(line))
