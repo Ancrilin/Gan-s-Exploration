@@ -495,15 +495,9 @@ def main(args):
 
     if args.do_train:
         if config['data_file'].startswith('binary'):
-            text_train_set = processor.read_dataset(data_path, ['train'])
-            text_dev_set = processor.read_dataset(data_path, ['val'])
-        elif config['dataset'] == 'oos-eval':
-            text_train_set = processor.read_dataset(data_path, ['train', 'oos_train'])
-            text_dev_set = processor.read_dataset(data_path, ['val', 'oos_val'])
-        elif config['dataset'] == 'smp':
             if args.mode != -1:
-                text_train_set, text_train_len = processor.read_dataset(data_path, ['train'])
-                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'])
+                text_train_set, text_train_len = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen)
+                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
                 print('--------------')
                 print('text_train_set', text_train_set)
                 print('text_train_len', text_train_len)
@@ -511,8 +505,15 @@ def main(args):
                 print('text_dev_len', text_dev_len)
             else:
                 print('==============')
-                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen)
-                text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
+                text_train_set = processor.read_dataset(data_path, ['train'])
+                text_dev_set = processor.read_dataset(data_path, ['val'])
+
+        elif config['dataset'] == 'oos-eval':
+            text_train_set = processor.read_dataset(data_path, ['train', 'oos_train'])
+            text_dev_set = processor.read_dataset(data_path, ['val', 'oos_val'])
+        elif config['dataset'] == 'smp':
+            text_train_set, text_train_len = processor.read_dataset(data_path, ['train'])
+            text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'])
 
 
         train_features = processor.convert_to_ids(text_train_set)
@@ -527,16 +528,18 @@ def main(args):
     if args.do_eval:
         logger.info('#################### eval result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
-            text_dev_set = processor.read_dataset(data_path, ['val'])
-        elif config['dataset'] == 'oos-eval':
-            text_dev_set = processor.read_dataset(data_path, ['val', 'oos_val'])
-        elif config['dataset'] == 'smp':
             if args.mode != -1:
-                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'])
+                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
+                print('--------------')
                 print('text_dev_set', text_dev_set)
                 print('text_dev_len', text_dev_len)
             else:
-                text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
+                print('==============')
+                text_dev_set = processor.read_dataset(data_path, ['val'])
+        elif config['dataset'] == 'oos-eval':
+            text_dev_set = processor.read_dataset(data_path, ['val', 'oos_val'])
+        elif config['dataset'] == 'smp':
+            text_dev_set = processor.read_dataset(data_path, ['val'])
 
 
         dev_features = processor.convert_to_ids(text_dev_set)
@@ -554,16 +557,16 @@ def main(args):
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
-            text_test_set = processor.read_dataset(data_path, ['test'])
-        elif config['dataset'] == 'oos-eval':
-            text_test_set = processor.read_dataset(data_path, ['test', 'oos_test'])
-        elif config['dataset'] == 'smp':
             if args.mode != -1:
-                text_test_set, text_test_len = processor.read_dataset(data_path, ['test'])
+                text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], args.mode, args.maxlen)
                 print('text_test_set', text_test_set)
                 print('text_test_len', text_test_len)
             else:
-                text_test_set = processor.read_dataset(data_path, ['test'], args.mode, args.maxlen)
+                text_test_set, text_test_len = processor.read_dataset(data_path, ['test'])
+        elif config['dataset'] == 'oos-eval':
+            text_test_set = processor.read_dataset(data_path, ['test', 'oos_test'])
+        elif config['dataset'] == 'smp':
+            text_test_set = processor.read_dataset(data_path, ['test'])
 
         test_features = processor.convert_to_ids(text_test_set)
         test_dataset = OOSDataset(test_features)
