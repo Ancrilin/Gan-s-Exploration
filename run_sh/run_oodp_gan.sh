@@ -16,15 +16,16 @@ for seed in ${seeds} ; do
   --bert_type=bert-base-chinese \
   --dataset=smp \
   --data_file=$1 \
-  --output_dir=oodp-gan/oodp-gan-smp_maxlen-1_mode1_s${seed} \
+  --output_dir=oodp-gan/oodp-gan-smp_maxlen$3_mode$2_s${seed} \
   --do_train \
   --do_eval \
   --do_test \
   --do_vis \
   --feature_dim=768 \
   --G_z_dim=1024  \
-  --mode=1  \
-  --maxlen=$2 \
-  --result=$3
+  --mode=$2  \
+  --maxlen=$3 \
+  --result=$4
+  rm -rf oodp-gan/oodp-gan-smp_maxlen$3_mode$2_s${seed}/save
 done
 exit 0

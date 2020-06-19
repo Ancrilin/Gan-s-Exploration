@@ -55,6 +55,7 @@ def check_args(args):
 def main(args):
     logger.info('Checking...')
     SEED = args.seed
+    gross_result['seed'] = args.seed
     logger.info('seed: {}'.format(SEED))
     logger.info('model: {}'.format(args.model))
     check_manual_seed(SEED)
@@ -652,7 +653,6 @@ def main(args):
     df.to_csv(os.path.join(config['output_dir'], 'test_score.csv'))
 
     if args.result != 'no':
-        gross_result['seed'] = args.seed
         pd_result = pd.DataFrame(gross_result)
         if args.seed == 16:
             pd_result.to_csv(args.result + '_gross_result.csv', index=False)
