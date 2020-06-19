@@ -34,6 +34,7 @@ from utils.tool import ErrorRateAt95Recall, save_result, save_feature
 SEED = 123
 freeze_data = dict()
 best_dev = -1
+gross_result = {}
 
 if torch.cuda.is_available():
     device = 'cuda'
@@ -553,6 +554,12 @@ def main(args):
         logger.info('eval_auc: {}'.format(eval_result['auc']))
         logger.info(
             'eval_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
+        gross_result['eval_eer'] = eval_result['eer']
+        gross_result['eval_auc'] = eval_result['auc']
+        gross_result['eval_fpr95'] = ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])
+        gross_result['eval_oos_ind_precision'] = eval_result['oos_ind_precision']
+        gross_result['eval_oos_ind_recall'] = eval_result['oos_ind_recall']
+        gross_result['eval_oos_ind_f_score'] = eval_result['oos_ind_f_score']
 
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
@@ -576,12 +583,18 @@ def main(args):
         logger.info('test_ood_ind_precision: {}'.format(test_result['oos_ind_precision']))
         logger.info('test_ood_ind_recall: {}'.format(test_result['oos_ind_recall']))
         logger.info('test_ood_ind_f_score: {}'.format(test_result['oos_ind_f_score']))
-        logger.info('test_auc: {}'.format(eval_result['auc']))
+        logger.info('test_auc: {}'.format(test_result['auc']))
         logger.info('test_fpr95: {}'.format(ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])))
         my_plot_roc(test_result['all_binary_y'], test_result['y_score'],
                     os.path.join(args.output_dir, 'roc_curve.png'))
         save_result(test_result, os.path.join(args.output_dir, 'test_result'))
         # save_feature(test_result['all_features'], os.path.join(args.output_dir, 'test_feature'))
+        gross_result['test_eer'] = test_result['eer']
+        gross_result['test_auc'] = test_result['auc']
+        gross_result['test_fpr95'] = ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])
+        gross_result['test_oos_ind_precision'] = test_result['oos_ind_precision']
+        gross_result['test_oos_ind_recall'] = test_result['oos_ind_recall']
+        gross_result['test_oos_ind_f_score'] = test_result['oos_ind_f_score']
 
         # 输出错误cases
         if config['dataset'] == 'oos-eval':
@@ -638,6 +651,13 @@ def main(args):
                             })
     df.to_csv(os.path.join(config['output_dir'], 'test_score.csv'))
 
+    if args.result != 'no':
+        gross_result['seed'] = args.seed
+        pd_result = pd.DataFrame(gross_result)
+        if args.seed == 16:
+            df.to_csv(args.result + '_gross_result.csv', index=False)
+        else:
+            df.to_csv(args.result + '_gross_result.csv', index=False, mode='a', header=False)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -650,6 +670,10 @@ if __name__ == '__main__':
     parser.add_argument('--data_file', required=False, type=str,
                         help="""Which type of dataset to be used, 
                         i.e. binary_undersample.json, binary_wiki_aug.json. Detail in config/data.ini""")
+    # binary_smp_full base
+    # binary_smp_full_v2 自己排除知识
+    # binary_smp_full_v3 知识库排除
+    # binary_smp_full_v4 知识库+ziji
 
     # ------------------------bert------------------------ #
     parser.add_argument('--bert_type',
@@ -710,6 +734,7 @@ if __name__ == '__main__':
     # data config
     parser.add_argument('--mode', type=int, default=-1)
     parser.add_argument('--maxlen', type=int, default=-1)
+    parser.add_argument('--result', type=str, default="no")
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
