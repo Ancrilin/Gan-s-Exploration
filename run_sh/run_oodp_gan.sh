@@ -1,6 +1,6 @@
 #! /bin/bash
 
-seeds="16 123"
+seeds="16 123 256 512 1024 1536 2048 4096 8192"
 # dataset_file="binary_smp_full_v2"
 for seed in ${seeds} ; do
   python -m app.run_oodp_gan \
