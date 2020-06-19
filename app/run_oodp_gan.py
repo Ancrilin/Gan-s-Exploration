@@ -655,9 +655,9 @@ def main(args):
         gross_result['seed'] = args.seed
         pd_result = pd.DataFrame(gross_result)
         if args.seed == 16:
-            df.to_csv(args.result + '_gross_result.csv', index=False)
+            pd_result.to_csv(args.result + '_gross_result.csv', index=False)
         else:
-            df.to_csv(args.result + '_gross_result.csv', index=False, mode='a', header=False)
+            pd_result.to_csv(args.result + '_gross_result.csv', index=False, mode='a', header=False)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
