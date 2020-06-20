@@ -15,6 +15,7 @@ from sklearn.manifold import TSNE
 from torch.utils.data.dataloader import DataLoader
 from transformers import BertModel
 from transformers.optimization import AdamW
+from sklearn.metrics import roc_auc_score
 
 import metrics
 from config import Config
@@ -26,11 +27,13 @@ from processor.oos_processor import OOSProcessor
 from processor.smp_processor import SMPProcessor
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
 from utils import convert_to_int_by_threshold
-from utils.visualization import scatter_plot, my_plot_roc
-from utils.tool import ErrorRateAt95Recall, save_result
+from utils.visualization import scatter_plot, my_plot_roc, plot_train_test
+from utils.tool import ErrorRateAt95Recall, save_result, save_feature
+
 
 SEED = 123
 freeze_data = dict()
+gross_result = {}
 
 if torch.cuda.is_available():
     device = 'cuda:0'
@@ -50,8 +53,10 @@ def check_args(args):
 
 def main(args):
     logger.info('Checking...')
+    SEED = args.seed
     check_manual_seed(SEED)
     check_args(args)
+    gross_result['seed'] = args.seed
 
     logger.info('Loading config...')
     bert_config = Config('config/bert.ini')
@@ -327,6 +332,8 @@ def main(args):
         result['oos_ind_recall'] = oos_ind_recall
         result['oos_ind_f_score'] = oos_ind_fscore
         result['y_score'] = y_score
+        result['auc'] = roc_auc_score(all_binary_y, y_score)
+        result['all_binary_y'] = all_binary_y
         if n_class > 2:
             result['class_loss'] = class_loss
             result['class_acc'] = class_acc
@@ -419,6 +426,7 @@ def main(args):
         result['oos_ind_f_score'] = oos_ind_fscore
         result['score'] = y_score
         result['y_score'] = y_score
+        result['auc'] = roc_auc_score(all_binary_y, y_score)
         if n_class > 2:
             result['class_loss'] = class_loss
             result['class_acc'] = class_acc
@@ -490,8 +498,15 @@ def main(args):
         logger.info('eval_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
         logger.info('eval_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
         logger.info('eval_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+        logger.info('eval_auc: {}'.format(eval_result['auc']))
         logger.info(
             'eval_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
+        gross_result['eval_oos_ind_precision'] = eval_result['oos_ind_precision']
+        gross_result['eval_oos_ind_recall'] = eval_result['oos_ind_recall']
+        gross_result['eval_oos_ind_f_score'] = eval_result['oos_ind_f_score']
+        gross_result['eval_eer'] = eval_result['eer']
+        gross_result['eval_fpr95'] = ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])
+        gross_result['eval_auc'] = eval_result['auc']
 
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
@@ -510,7 +525,14 @@ def main(args):
         logger.info('test_ood_ind_precision: {}'.format(test_result['oos_ind_precision']))
         logger.info('test_ood_ind_recall: {}'.format(test_result['oos_ind_recall']))
         logger.info('test_ood_ind_f_score: {}'.format(test_result['oos_ind_f_score']))
+        logger.info('test_auc: {}'.format(test_result['auc']))
         logger.info('test_fpr95: {}'.format(ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])))
+        gross_result['test_oos_ind_precision'] = test_result['oos_ind_precision']
+        gross_result['test_oos_ind_recall'] = test_result['oos_ind_recall']
+        gross_result['test_oos_ind_f_score'] = test_result['oos_ind_f_score']
+        gross_result['test_eer'] = test_result['eer']
+        gross_result['test_fpr95'] = ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])
+        gross_result['test_auc'] = test_result['auc']
         my_plot_roc(test_result['all_binary_y'], test_result['y_score'],
                     os.path.join(args.output_dir, 'roc_curve.png'))
         save_result(test_result, os.path.join(args.output_dir, 'test_result'))
@@ -557,6 +579,14 @@ def main(args):
                             'test_score': freeze_data['test_score']
                             })
     df.to_csv(os.path.join(config['output_dir'], 'test_score.csv'))
+
+    if args.result != 'no':
+        pd_result = pd.DataFrame(gross_result)
+        if args.seed == 16:
+            pd_result.to_csv(args.result + '_gross_result.csv', index=False)
+        else:
+            pd_result.to_csv(args.result + '_gross_result.csv', index=False, mode='a', header=False)
+
 
 
 if __name__ == '__main__':
@@ -622,6 +652,8 @@ if __name__ == '__main__':
     parser.add_argument('--bert_lr', type=float, default=2e-4, help="Learning rate for Generator.")
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
+    parser.add_argument('--seed', type=int, required=True)
+    parser.add_argument('--result', type=str)
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)

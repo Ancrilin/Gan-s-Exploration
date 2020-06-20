@@ -13,7 +13,7 @@ for seed in ${seeds} ; do
     --lr=2e-6 \
     --dataset=smp \
     --data_file=$1 \
-    --output_dir=output/text-cnn_$seed \
+    --output_dir=output/text-cnn_s$seed \
     --gradient_accumulation_steps=1 \
     --do_train \
     --do_eval \
