@@ -18,7 +18,7 @@ for seed in ${seeds} ; do
     --do_train \
     --do_eval \
     --do_test \
-    --seed=seed \
+    --seed=$seed \
     --result=$2
   rm -rf output/text-biLSTM/save
 done
