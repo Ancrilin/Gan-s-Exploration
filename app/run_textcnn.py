@@ -53,6 +53,7 @@ def main(args):
     check_manual_seed(SEED)
     check_args(args)
     logger.info('seed: {}'.format(args.seed))
+    gross_result['seed'] = args.seed
 
     logger.info('Loading config...')
     bert_config = BertConfig('config/bert.ini')
