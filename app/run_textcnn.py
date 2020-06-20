@@ -212,6 +212,8 @@ def main(args):
         result['oos_ind_recall'] = oos_ind_recall
         result['oos_ind_f_score'] = oos_ind_fscore
         result['auc'] = roc_auc_score(all_binary_y, y_score)
+        result['y_score'] = y_score
+        result['all_binary_y'] = all_binary_y
 
         freeze_data['valid_all_y'] = all_y
         freeze_data['vaild_all_pred'] = all_pred
@@ -262,6 +264,7 @@ def main(args):
         result['loss'] = total_loss / n_sample
         result['all_y'] = all_y.tolist()
         result['all_pred'] = all_pred.tolist()
+        result['all_binary_y'] = all_binary_y
 
         freeze_data['test_all_y'] = all_y.tolist()
         freeze_data['test_all_pred'] = all_pred.tolist()
@@ -271,6 +274,7 @@ def main(args):
         result['oos_ind_recall'] = oos_ind_recall
         result['oos_ind_f_score'] = oos_ind_fscore
         result['auc'] = roc_auc_score(all_binary_y, y_score)
+        result['y_score'] = y_score
         return result
 
     if args.do_train:
