@@ -11,6 +11,7 @@ import torch
 import tqdm
 from torch.utils.data.dataloader import DataLoader
 from transformers.optimization import AdamW
+from sklearn.metrics import roc_auc_score
 
 import metrics
 from config import Config, BertConfig
@@ -21,9 +22,13 @@ from model.bilstm import BertBiLSTM
 from processor.oos_processor import OOSProcessor
 from processor.smp_processor import SMPProcessor
 from utils import check_manual_seed, save_model, load_model, output_cases, EarlyStopping
+from utils.visualization import scatter_plot, my_plot_roc, plot_train_test
+from utils.tool import ErrorRateAt95Recall, save_result, save_feature
+
 
 freeze_data = dict()
 SEED = 123
+gross_result = {}
 
 if torch.cuda.is_available():
     device = 'cuda:0'
@@ -45,6 +50,7 @@ def check_args(args):
 
 def main(args):
     logger.info('Checking...')
+    SEED = args.seed
     check_manual_seed(SEED)
     check_args(args)
 
@@ -191,6 +197,8 @@ def main(args):
         all_logit = torch.cat(all_logit, 0).cpu()
         ind_class_acc = metrics.ind_class_accuracy(all_pred, all_y)
         report = metrics.classification_report(all_y, all_pred, output_dict=True)
+        oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(all_pred,
+                                                                                            all_binary_y)
         result.update(report)
         y_score = all_logit.softmax(1)[:, 1].tolist()
         eer = metrics.cal_eer(all_binary_y, y_score)
@@ -198,6 +206,12 @@ def main(args):
         result['eer'] = eer
         result['ind_class_acc'] = ind_class_acc
         result['loss'] = total_loss / n_sample
+        result['oos_ind_precision'] = oos_ind_precision
+        result['oos_ind_recall'] = oos_ind_recall
+        result['oos_ind_f_score'] = oos_ind_fscore
+        result['auc'] = roc_auc_score(all_binary_y, y_score)
+        result['y_score'] = y_score
+        result['all_binary_y'] = all_binary_y
 
         freeze_data['valid_all_y'] = all_y
         freeze_data['vaild_all_pred'] = all_pred
@@ -236,6 +250,8 @@ def main(args):
         # classification report
         ind_class_acc = metrics.ind_class_accuracy(all_pred, all_y)
         report = metrics.classification_report(all_y, all_pred, output_dict=True)
+        oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(all_pred,
+                                                                                            all_binary_y)
         result.update(report)
         # 只有二分类时候ERR才有意义
         y_score = all_logit.softmax(1)[:, 1].tolist()
@@ -246,6 +262,12 @@ def main(args):
         result['loss'] = total_loss / n_sample
         result['all_y'] = all_y.tolist()
         result['all_pred'] = all_pred.tolist()
+        result['oos_ind_precision'] = oos_ind_precision
+        result['oos_ind_recall'] = oos_ind_recall
+        result['oos_ind_f_score'] = oos_ind_fscore
+        result['auc'] = roc_auc_score(all_binary_y, y_score)
+        result['y_score'] = y_score
+        result['all_binary_y'] = all_binary_y
 
         freeze_data['test_all_y'] = all_y.tolist()
         freeze_data['test_all_pred'] = all_pred.tolist()
@@ -283,6 +305,19 @@ def main(args):
         dev_dataset = OOSDataset(dev_features)
         eval_result = eval(dev_dataset)
         logger.info(eval_result)
+        logger.info('eval_eer: {}'.format(eval_result['eer']))
+        logger.info('eval_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
+        logger.info('eval_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
+        logger.info('eval_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+        logger.info('eval_auc: {}'.format(eval_result['auc']))
+        logger.info(
+            'eval_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
+        gross_result['eval_eer'] = eval_result['eer']
+        gross_result['eval_auc'] = eval_result['auc']
+        gross_result['eval_fpr95'] = ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])
+        gross_result['eval_oos_ind_precision'] = eval_result['oos_ind_precision']
+        gross_result['eval_oos_ind_recall'] = eval_result['oos_ind_recall']
+        gross_result['eval_oos_ind_f_score'] = eval_result['oos_ind_f_score']
 
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
@@ -297,6 +332,18 @@ def main(args):
         test_dataset = OOSDataset(test_features)
         test_result = test(test_dataset)
         logger.info(test_result)
+        logger.info('test_eer: {}'.format(test_result['eer']))
+        logger.info('test_ood_ind_precision: {}'.format(test_result['oos_ind_precision']))
+        logger.info('test_ood_ind_recall: {}'.format(test_result['oos_ind_recall']))
+        logger.info('test_ood_ind_f_score: {}'.format(test_result['oos_ind_f_score']))
+        logger.info('test_auc: {}'.format(test_result['auc']))
+        logger.info('test_fpr95: {}'.format(ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])))
+        gross_result['test_eer'] = test_result['eer']
+        gross_result['test_auc'] = test_result['auc']
+        gross_result['test_fpr95'] = ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])
+        gross_result['test_oos_ind_precision'] = test_result['oos_ind_precision']
+        gross_result['test_oos_ind_recall'] = test_result['oos_ind_recall']
+        gross_result['test_oos_ind_f_score'] = test_result['oos_ind_f_score']
 
         # 输出错误cases
         if config['dataset'] == 'oos-eval':
@@ -376,6 +423,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
+    parser.add_argument('--seed', type=int, required=True)
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
