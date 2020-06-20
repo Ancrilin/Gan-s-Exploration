@@ -376,6 +376,14 @@ def main(args):
                             })
     df.to_csv(os.path.join(config['output_dir'], 'test_score.csv'))
 
+    if args.result != 'no':
+        pd_result = pd.DataFrame(gross_result)
+        if args.seed == 16:
+            pd_result.to_csv(args.result + '_gross_result.csv', index=False)
+        else:
+            pd_result.to_csv(args.result + '_gross_result.csv', index=False, mode='a', header=False)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
@@ -428,6 +436,7 @@ if __name__ == '__main__':
                         help='Whether to fine tune BERT during training.')
 
     parser.add_argument('--seed', type=int, required=True)
+    parser.add_argument('--result', type=str)
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
