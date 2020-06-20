@@ -19,7 +19,7 @@ for seed in ${seeds} ; do
     --do_eval \
     --do_test \
     --do_vis \
-    --feature_dim=1024 \
+    --feature_dim=768 \
     --G_z_dim=1024  \
     --seed=$seed  \
     --result=$2
