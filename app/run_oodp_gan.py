@@ -737,7 +737,7 @@ if __name__ == '__main__':
     parser.add_argument('--mode', type=int, default=-1)
     parser.add_argument('--maxlen', type=int, default=-1)
     parser.add_argument('--result', type=str, default="no")
-    parser.add_argument('--ood', type=bool, default=False)
+    parser.add_argument('--ood', action='store_true', default=False)
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
