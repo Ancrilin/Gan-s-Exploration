@@ -517,7 +517,8 @@ def main(args):
             text_train_set, text_train_len = processor.read_dataset(data_path, ['train'])
             text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'])
 
-
+        if args.ood:
+            text_train_set = [sample for sample in text_train_set if sample['domain'] != 'chat']
         train_features = processor.convert_to_ids(text_train_set)
         train_dataset = OOSDataset(train_features)
         dev_features = processor.convert_to_ids(text_dev_set)
@@ -735,6 +736,7 @@ if __name__ == '__main__':
     parser.add_argument('--mode', type=int, default=-1)
     parser.add_argument('--maxlen', type=int, default=-1)
     parser.add_argument('--result', type=str, default="no")
+    parser.add_argument('--ood', action='store_true', default=False)
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
