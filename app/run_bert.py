@@ -336,6 +336,7 @@ def main(args):
         test_features = processor.convert_to_ids(text_test_set)
         test_dataset = OOSDataset(test_features)
         test_result = test(test_dataset)
+        save_result(test_result, os.path.join(args.output_dir, 'test_result'))
         logger.info(test_result)
         logger.info('test_eer: {}'.format(test_result['eer']))
         logger.info('test_ood_ind_precision: {}'.format(test_result['oos_ind_precision']))
