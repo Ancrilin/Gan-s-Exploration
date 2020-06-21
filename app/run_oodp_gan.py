@@ -556,12 +556,12 @@ def main(args):
         logger.info('eval_auc: {}'.format(eval_result['auc']))
         logger.info(
             'eval_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
-        gross_result['eval_eer'] = eval_result['eer']
-        gross_result['eval_auc'] = eval_result['auc']
-        gross_result['eval_fpr95'] = ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])
         gross_result['eval_oos_ind_precision'] = eval_result['oos_ind_precision']
         gross_result['eval_oos_ind_recall'] = eval_result['oos_ind_recall']
         gross_result['eval_oos_ind_f_score'] = eval_result['oos_ind_f_score']
+        gross_result['eval_eer'] = eval_result['eer']
+        gross_result['eval_fpr95'] = ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])
+        gross_result['eval_auc'] = eval_result['auc']
 
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
@@ -591,12 +591,12 @@ def main(args):
                     os.path.join(args.output_dir, 'roc_curve.png'))
         save_result(test_result, os.path.join(args.output_dir, 'test_result'))
         # save_feature(test_result['all_features'], os.path.join(args.output_dir, 'test_feature'))
-        gross_result['test_eer'] = test_result['eer']
-        gross_result['test_auc'] = test_result['auc']
-        gross_result['test_fpr95'] = ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])
         gross_result['test_oos_ind_precision'] = test_result['oos_ind_precision']
         gross_result['test_oos_ind_recall'] = test_result['oos_ind_recall']
         gross_result['test_oos_ind_f_score'] = test_result['oos_ind_f_score']
+        gross_result['test_eer'] = test_result['eer']
+        gross_result['test_fpr95'] = ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])
+        gross_result['test_auc'] = test_result['auc']
 
         # 输出错误cases
         if config['dataset'] == 'oos-eval':
