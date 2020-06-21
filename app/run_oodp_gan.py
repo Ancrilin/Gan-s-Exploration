@@ -567,12 +567,13 @@ def main(args):
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
-            if args.mode != -1:
-                text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], args.mode, args.maxlen)
-                print('text_test_set', text_test_set)
-                print('text_test_len', text_test_len)
-            else:
-                text_test_set = processor.read_dataset(data_path, ['test'])
+            # if args.mode != -1:
+            #     text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], args.mode, args.maxlen)
+            #     print('text_test_set', text_test_set)
+            #     print('text_test_len', text_test_len)
+            # else:
+            #     text_test_set = processor.read_dataset(data_path, ['test'])
+            text_test_set = processor.read_dataset(data_path, ['test'])
         elif config['dataset'] == 'oos-eval':
             text_test_set = processor.read_dataset(data_path, ['test', 'oos_test'])
         elif config['dataset'] == 'smp':
