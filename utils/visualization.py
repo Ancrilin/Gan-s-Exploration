@@ -26,7 +26,7 @@ def scatter_plot(data: np.ndarray, processor: BaseProcessor):
     # id_to_label_map = {i: label for i, label in enumerate(processor.id_to_label)}
     id_to_label_map = {i: label for i, label in enumerate(id_to_label)}
     print('id_to_label_map', type(id_to_label_map), id_to_label_map)
-    id_to_label_map[-1] = 'gan'
+    id_to_label_map[-1] = 'GAN'
     df = pd.DataFrame(data, columns=['x', 'y', 'label'])
     df['label'] = df['label'].apply(lambda x: id_to_label_map[int(x)])
 
