@@ -54,7 +54,7 @@ def check_args(args):
 
 def main(args):
     logger.info('Checking...')
-    logger.info('ood: {}', args.ood)
+    logger.info('ood: {}'.format(args.ood))
     SEED = args.seed
     gross_result['seed'] = args.seed
     logger.info('seed: {}'.format(SEED))
