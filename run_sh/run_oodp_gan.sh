@@ -25,7 +25,8 @@ for seed in ${seeds} ; do
   --G_z_dim=1024  \
   --mode=$2  \
   --maxlen=$3 \
-  --result=$4
+  --result=$4 \
+  --ood=$5
   rm -rf oodp-gan/oodp-gan-smp_maxlen$3_mode$2_s${seed}/save
 done
 exit 0

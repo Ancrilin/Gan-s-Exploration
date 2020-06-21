@@ -54,6 +54,7 @@ def check_args(args):
 
 def main(args):
     logger.info('Checking...')
+    logger.info('ood: {}', args.ood)
     SEED = args.seed
     gross_result['seed'] = args.seed
     logger.info('seed: {}'.format(SEED))
@@ -736,7 +737,7 @@ if __name__ == '__main__':
     parser.add_argument('--mode', type=int, default=-1)
     parser.add_argument('--maxlen', type=int, default=-1)
     parser.add_argument('--result', type=str, default="no")
-    parser.add_argument('--ood', action='store_true', default=False)
+    parser.add_argument('--ood', type=bool, default=False)
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
