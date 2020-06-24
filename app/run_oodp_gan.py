@@ -682,6 +682,7 @@ def main(args):
         else:
             pd_result.to_csv(args.result + '_gross_result.csv', index=False, mode='a', header=False)
         if args.seed == 8192:
+            print(args.result)
             std_mean(args.result + '_gross_result.csv')
 
 

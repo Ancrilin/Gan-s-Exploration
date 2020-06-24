@@ -311,5 +311,5 @@ def std_mean(path):
     print(mean_result)
     std_result = pd.DataFrame(std_result)
     mean_result = pd.DataFrame(mean_result)
-    std_result.to_csv('_gross_result.csv', index=False, mode='a', header=False)
-    mean_result.to_csv('_gross_result.csv', index=False, mode='a', header=False)
+    std_result.to_csv(path, index=False, mode='a', header=False)
+    mean_result.to_csv(path, index=False, mode='a', header=False)
