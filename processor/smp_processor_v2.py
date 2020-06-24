@@ -24,7 +24,7 @@ class SMPProcessor_v2(BertProcessor):
             ids_data.append(self.parse_line(line))
         return ids_data
 
-    def read_dataset(self, path: str, data_types: list, mode=0, maxlen=-1):
+    def read_dataset(self, path: str, data_types: list, mode=0, maxlen=-1, minlen=-1):
         """
         读取数据集文件
         :param path: 路径
@@ -41,6 +41,8 @@ class SMPProcessor_v2(BertProcessor):
             for line in data[data_type]:
                 # dataset.append(line)
                 if maxlen != -1 and len(line['text']) > maxlen:
+                    continue
+                if minlen != -1 and len(line['text']) <= minlen:
                     continue
                 if mode == 1 and line['knowledge'] == 1:
                     continue
