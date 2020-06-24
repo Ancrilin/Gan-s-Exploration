@@ -54,6 +54,7 @@ def check_args(args):
 
 def main(args):
     logger.info('Checking...')
+    logger.info('device: {}'.format(device))
     logger.info('ood: {}'.format(args.ood))
     SEED = args.seed
     gross_result['seed'] = args.seed
@@ -62,6 +63,8 @@ def main(args):
     check_manual_seed(SEED)
     check_args(args)
     logger.info('mode: {}'.format(args.mode))
+    logger.info('maxlen: {}'.format(args.maxlen))
+    logger.info('minlen: {}'.format(args.minlen))
 
     logger.info('Loading config...')
     bert_config = Config('config/bert.ini')
@@ -741,6 +744,7 @@ if __name__ == '__main__':
     # data config
     parser.add_argument('--mode', type=int, default=-1)
     parser.add_argument('--maxlen', type=int, default=-1)
+    parser.add_argument('--minlen', type=int, default=-1)
     parser.add_argument('--result', type=str, default="no")
     parser.add_argument('--ood', action='store_true', default=False)
 
