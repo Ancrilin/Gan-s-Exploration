@@ -11,6 +11,5 @@ for len in ${lengths} ; do
 done
 mv oodp-gan GQOGAN_mode$2_maxlen${len}
 mv GQOGAN-maxlen${len}_minlen-1_mode$2_gross_result.csv GQOGAN_mode$2_maxlen${len}
-echo $4/GQOGAN_mode$2maxlen${len}
-mv GQOGAN_mode$2_maxlen${len} $4
+mv "GQOGAN_mode$2_maxlen${len}" "$4"
 exit 0
