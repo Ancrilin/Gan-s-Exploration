@@ -130,8 +130,8 @@ def main(args):
     G = model.Generator(config)
     E = BertModel.from_pretrained(bert_config['PreTrainModelDir'])  # Bert encoder
 
-    logger.info('Discriminator: {}'.format(D))
-    logger.info('Generator: {}'.format(G))
+    # logger.info('Discriminator: {}'.format(D))
+    # logger.info('Generator: {}'.format(G))
 
     if args.fine_tune:
         for param in E.parameters():
@@ -255,12 +255,12 @@ def main(args):
                 G_train_loss += g_loss.detach() + fm_loss.detach()
                 FM_train_loss += fm_loss.detach()
 
-            logger.info('[Epoch {}] Train: D_fake_loss: {}'.format(i, D_fake_loss / n_sample))
-            logger.info('[Epoch {}] Train: D_real_loss: {}'.format(i, D_real_loss / n_sample))
-            logger.info('[Epoch {}] Train: D_class_loss: {}'.format(i, D_class_loss / n_sample))
-            logger.info('[Epoch {}] Train: G_train_loss: {}'.format(i, G_train_loss / n_sample))
-            logger.info('[Epoch {}] Train: FM_train_loss: {}'.format(i, FM_train_loss / n_sample))
-            logger.info('---------------------------------------------------------------------------')
+            # logger.info('[Epoch {}] Train: D_fake_loss: {}'.format(i, D_fake_loss / n_sample))
+            # logger.info('[Epoch {}] Train: D_real_loss: {}'.format(i, D_real_loss / n_sample))
+            # logger.info('[Epoch {}] Train: D_class_loss: {}'.format(i, D_class_loss / n_sample))
+            # logger.info('[Epoch {}] Train: G_train_loss: {}'.format(i, G_train_loss / n_sample))
+            # logger.info('[Epoch {}] Train: FM_train_loss: {}'.format(i, FM_train_loss / n_sample))
+            # logger.info('---------------------------------------------------------------------------')
 
             D_total_fake_loss.append(D_fake_loss / n_sample)
             D_total_real_loss.append(D_real_loss / n_sample)
@@ -269,7 +269,7 @@ def main(args):
             FM_total_train_loss.append(FM_train_loss / n_sample)
 
             if dev_dataset:
-                logger.info('#################### eval result at step {} ####################'.format(global_step))
+                # logger.info('#################### eval result at step {} ####################'.format(global_step))
                 eval_result = eval(dev_dataset)
 
                 valid_detection_loss.append(eval_result['detection_loss'])
@@ -290,14 +290,14 @@ def main(args):
                     if args.fine_tune:
                         save_model(E, path=config['bert_save_path'], model_name='bert')
 
-                logger.info(eval_result)
-                logger.info('valid_eer: {}'.format(eval_result['eer']))
-                logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
-                logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
-                logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
-                logger.info('valid_auc: {}'.format(eval_result['auc']))
-                logger.info(
-                    'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
+                # logger.info(eval_result)
+                # logger.info('valid_eer: {}'.format(eval_result['eer']))
+                # logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
+                # logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
+                # logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+                # logger.info('valid_auc: {}'.format(eval_result['auc']))
+                # logger.info(
+                #     'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
         if args.patience >= args.n_epoch:
             save_gan_model(D, G, config['gan_save_path'])
@@ -376,7 +376,7 @@ def main(args):
             class_acc = metrics.ind_class_accuracy(all_class_preds, all_y, oos_index=0)  # accuracy for ind class
             logger.info(metrics.classification_report(all_y, all_class_preds, target_names=processor.id_to_label))
 
-        logger.info(metrics.classification_report(all_binary_y, all_detection_binary_preds, target_names=['oos', 'in']))
+        # logger.info(metrics.classification_report(all_binary_y, all_detection_binary_preds, target_names=['oos', 'in']))
 
         # report
         oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(all_detection_binary_preds, all_binary_y)
@@ -467,7 +467,7 @@ def main(args):
             class_acc = metrics.ind_class_accuracy(all_class_preds, all_y, oos_index=0)  # accuracy for ind class
             logger.info(metrics.classification_report(all_y, all_class_preds, target_names=processor.id_to_label))
 
-        logger.info(metrics.classification_report(all_binary_y, all_detection_binary_preds, target_names=['oos', 'in']))
+        # logger.info(metrics.classification_report(all_binary_y, all_detection_binary_preds, target_names=['oos', 'in']))
 
         # report
         oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(all_detection_binary_preds, all_binary_y)
@@ -574,7 +574,7 @@ def main(args):
         dev_features = processor.convert_to_ids(text_dev_set)
         dev_dataset = OOSDataset(dev_features)
         eval_result = eval(dev_dataset)
-        logger.info(eval_result)
+        # logger.info(eval_result)
         logger.info('eval_eer: {}'.format(eval_result['eer']))
         logger.info('eval_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
         logger.info('eval_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
@@ -602,7 +602,7 @@ def main(args):
         test_features = processor.convert_to_ids(text_test_set)
         test_dataset = OOSDataset(test_features)
         test_result = test(test_dataset)
-        logger.info(test_result)
+        # logger.info(test_result)
         logger.info('test_eer: {}'.format(test_result['eer']))
         logger.info('test_ood_ind_precision: {}'.format(test_result['oos_ind_precision']))
         logger.info('test_ood_ind_recall: {}'.format(test_result['oos_ind_recall']))
