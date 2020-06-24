@@ -9,8 +9,8 @@ lengths="21"
 for len in ${lengths} ; do
   bash run_sh/run_oodp_gan.sh $1 $2 ${len} $3 GQOGAN-maxlen${len}_minlen-1_mode$2
 done
-mv oodp-gan GQOGAN_mode$2
-mv GQOGAN-maxlen${len}_minlen-1_mode$2_gross_result.csv GQOGAN_mode$2
-echo $4/GQOGAN_mode$2
-mv GQOGAN_mode$2 $4
+mv oodp-gan GQOGAN_mode$2_maxlen${len}
+mv GQOGAN-maxlen${len}_minlen-1_mode$2_gross_result.csv GQOGAN_mode$2_maxlen${len}
+echo $4/GQOGAN_mode$2maxlen${len}
+mv GQOGAN_mode$2_maxlen${len} $4
 exit 0
