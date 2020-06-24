@@ -1,6 +1,6 @@
 #! /bin/bash
 
-lengths="21"
+lengths="15 16 17 18 19 20 21 22 23 24 25"
 # dataset_file="binary_true_smp_full_v2"
 # $1 dataset_file
 # $2 mode
