@@ -9,6 +9,7 @@ import pickle
 
 import numpy as np
 import pandas as pd
+import json
 import torch
 import tqdm
 from sklearn.manifold import TSNE
@@ -79,6 +80,25 @@ def main(args):
     # Prepare data processor
     data_path = os.path.join(data_config['DataDir'], data_config[args.data_file])  # 把目录和文件名合成一个路径
     label_path = data_path.replace('.json', '.label')
+
+    with open(data_path, 'r', encoding='utf-8') as fp:
+        source = json.load(fp)
+        for type in source:
+            n = 0
+            n_id = 0
+            n_ood = 0
+            text_len = {}
+            for line in source[type]:
+                if line['domain'] == 'chat':
+                    n_ood += 1
+                else:
+                    n_id += 1
+                n += 1
+                text_len[len(line['text'])] = text_len.get(len(line['text']), 0) + 1
+            print(type, n)
+            print('ood', n_ood)
+            print('id', n_id)
+            print(sorted(text_len.items(), key=lambda d: d[0], reverse=False))
 
     if args.dataset == 'oos-eval':
         processor = OOSProcessor(bert_config, maxlen=32)
