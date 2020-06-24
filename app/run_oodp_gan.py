@@ -29,7 +29,7 @@ from processor.smp_processor_v2 import SMPProcessor_v2
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
 from utils import convert_to_int_by_threshold
 from utils.visualization import scatter_plot, my_plot_roc, plot_train_test
-from utils.tool import ErrorRateAt95Recall, save_result, save_feature
+from utils.tool import ErrorRateAt95Recall, save_result, save_feature, std_mean
 
 SEED = 123
 freeze_data = dict()
@@ -662,6 +662,9 @@ def main(args):
             pd_result.to_csv(args.result + '_gross_result.csv', index=False)
         else:
             pd_result.to_csv(args.result + '_gross_result.csv', index=False, mode='a', header=False)
+        if args.seed == 8192:
+            std_mean(args.result + '_gross_result.csv')
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

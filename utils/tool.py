@@ -7,6 +7,7 @@ import json
 import os
 import random
 from sklearn.metrics import roc_auc_score
+import numpy as np
 
 import numpy
 import pandas as pd
@@ -231,3 +232,84 @@ def save_result(result, save_path):
 
 def save_feature(feature, save_path):
     numpy.save(save_path, numpy.array(feature))
+
+def std_mean(path):
+    std_result = {}
+    mean_result = {}
+    std_result['std'] = ['std_ood', 'std_in']
+    mean_result['mean'] = ['mean_ood', 'mean_id']
+    all_gross_result = pd.read_csv(path)
+    all_eval_oos_precision = all_gross_result['eval_oos_ind_precision'].values[0::2]
+    all_eval_ind_precision = all_gross_result['eval_oos_ind_precision'].values[1::2]
+    all_eval_oos_recall = all_gross_result['eval_oos_ind_recall'].values[0::2]
+    all_eval_ind_recall = all_gross_result['eval_oos_ind_recall'].values[1::2]
+    all_eval_oos_f_score = all_gross_result['eval_oos_ind_f_score'].values[0::2]
+    all_eval_ind_f_score = all_gross_result['eval_oos_ind_f_score'].values[1::2]
+    all_eval_eer = all_gross_result['eval_eer'].values[0::2]
+    all_eval_fpr95 = all_gross_result['eval_fpr95'].values[0::2]
+    all_eval_auc = all_gross_result['eval_auc'].values[0::2]
+    mean_eval_oos_ind_precision = [np.mean(np.array(all_eval_oos_precision)), np.mean(np.array(all_eval_ind_precision))]
+    mean_eval_oos_ind_recall = [np.mean(np.array(all_eval_oos_recall)), np.mean(np.array(all_eval_ind_recall))]
+    mean_eval_oos_ind_f_score = [np.mean(np.array(all_eval_oos_f_score)), np.mean(np.array(all_eval_ind_f_score))]
+    mean_eval_eer = np.mean(np.array(all_eval_eer))
+    mean_eval_fpr95 = np.mean(np.array(all_eval_fpr95))
+    mean_eval_auc = np.mean(np.array(all_eval_auc))
+    std_eval_oos_ind_precision = [np.std(np.array(all_eval_oos_precision)), np.std(np.array(all_eval_ind_precision))]
+    std_eval_oos_ind_recall = [np.std(np.array(all_eval_oos_recall)), np.std(np.array(all_eval_ind_recall))]
+    std_eval_oos_ind_f_score = [np.std(np.array(all_eval_oos_f_score)), np.std(np.array(all_eval_ind_f_score))]
+    std_eval_eer = np.std(np.array(all_eval_eer))
+    std_eval_fpr95 = np.std(np.array(all_eval_fpr95))
+    std_eval_auc = np.std(np.array(all_eval_auc))
+    std_result['std_eval_oos_ind_precision'] = std_eval_oos_ind_precision
+    std_result['std_eval_oos_ind_recall'] = std_eval_oos_ind_recall
+    std_result['std_eval_oos_ind_f_score'] = std_eval_oos_ind_f_score
+    std_result['std_eval_eer'] = std_eval_eer
+    std_result['std_eval_fpr95'] = std_eval_fpr95
+    std_result['std_eval_auc'] = std_eval_auc
+    mean_result['mean_eval_oos_ind_precision'] = mean_eval_oos_ind_precision
+    mean_result['mean_eval_oos_ind_recall'] = mean_eval_oos_ind_recall
+    mean_result['mean_eval_oos_ind_f_score'] = mean_eval_oos_ind_f_score
+    mean_result['mean_eval_eer'] = mean_eval_eer
+    mean_result['mean_eval_fpr95'] = mean_eval_fpr95
+    mean_result['mean_eval_auc'] = mean_eval_auc
+
+    all_test_oos_precision = all_gross_result['test_oos_ind_precision'].values[0::2]
+    all_test_ind_precision = all_gross_result['test_oos_ind_precision'].values[1::2]
+    all_test_oos_recall = all_gross_result['test_oos_ind_recall'].values[0::2]
+    all_test_ind_recall = all_gross_result['test_oos_ind_recall'].values[1::2]
+    all_test_oos_f_score = all_gross_result['test_oos_ind_f_score'].values[0::2]
+    all_test_ind_f_score = all_gross_result['test_oos_ind_f_score'].values[1::2]
+    all_test_eer = all_gross_result['test_eer'].values[0::2]
+    all_test_fpr95 = all_gross_result['test_fpr95'].values[0::2]
+    all_test_auc = all_gross_result['test_auc'].values[0::2]
+    mean_test_oos_ind_precision = [np.mean(np.array(all_test_oos_precision)), np.mean(np.array(all_test_ind_precision))]
+    mean_test_oos_ind_recall = [np.mean(np.array(all_test_oos_recall)), np.mean(np.array(all_test_ind_recall))]
+    mean_test_oos_ind_f_score = [np.mean(np.array(all_test_oos_f_score)), np.mean(np.array(all_test_ind_f_score))]
+    mean_test_eer = np.mean(np.array(all_test_eer))
+    mean_test_fpr95 = np.mean(np.array(all_test_fpr95))
+    mean_test_auc = np.mean(np.array(all_test_auc))
+    std_test_oos_ind_precision = [np.std(np.array(all_test_oos_precision)), np.std(np.array(all_test_ind_precision))]
+    std_test_oos_ind_recall = [np.std(np.array(all_test_oos_recall)), np.std(np.array(all_test_ind_recall))]
+    std_test_oos_ind_f_score = [np.std(np.array(all_test_oos_f_score)), np.std(np.array(all_test_ind_f_score))]
+    std_test_eer = np.std(np.array(all_test_eer))
+    std_test_fpr95 = np.std(np.array(all_test_fpr95))
+    std_test_auc = np.std(np.array(all_test_auc))
+    std_result['std_test_oos_ind_precision'] = std_test_oos_ind_precision
+    std_result['std_test_oos_ind_recall'] = std_test_oos_ind_recall
+    std_result['std_test_oos_ind_f_score'] = std_test_oos_ind_f_score
+    std_result['std_test_eer'] = std_test_eer
+    std_result['std_test_fpr95'] = std_test_fpr95
+    std_result['std_test_auc'] = std_test_auc
+    mean_result['mean_test_oos_ind_precision'] = mean_test_oos_ind_precision
+    mean_result['mean_test_oos_ind_recall'] = mean_test_oos_ind_recall
+    mean_result['mean_test_oos_ind_f_score'] = mean_test_oos_ind_f_score
+    mean_result['mean_test_eer'] = mean_test_eer
+    mean_result['mean_test_fpr95'] = mean_test_fpr95
+    mean_result['mean_test_auc'] = mean_test_auc
+
+    print(std_result)
+    print(mean_result)
+    std_result = pd.DataFrame(std_result)
+    mean_result = pd.DataFrame(mean_result)
+    std_result.to_csv('_gross_result.csv', index=False, mode='a', header=False)
+    mean_result.to_csv('_gross_result.csv', index=False, mode='a', header=False)
