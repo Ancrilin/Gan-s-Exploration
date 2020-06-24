@@ -54,6 +54,8 @@ def check_args(args):
 
 def main(args):
     logger.info('Checking...')
+    print('torch.cuda.is_available:', torch.cuda.is_available())
+    print('torch.cuda.current_device:', torch.cuda.current_device())
     logger.info('device: {}'.format(device))
     logger.info('ood: {}'.format(args.ood))
     SEED = args.seed
@@ -502,8 +504,8 @@ def main(args):
     if args.do_train:
         if config['data_file'].startswith('binary'):
             if args.mode != -1:
-                text_train_set, text_train_len = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen)
-                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
+                text_train_set, text_train_len = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlen)
+                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen)
                 print('--------------')
                 print('text_train_set', text_train_set)
                 print('text_train_len', text_train_len)
@@ -536,7 +538,7 @@ def main(args):
         logger.info('#################### eval result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
             if args.mode != -1:
-                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen)
+                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen)
                 print('--------------')
                 print('text_dev_set', text_dev_set)
                 print('text_dev_len', text_dev_len)
@@ -570,13 +572,7 @@ def main(args):
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
-            # if args.mode != -1:
-            #     text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], args.mode, args.maxlen)
-            #     print('text_test_set', text_test_set)
-            #     print('text_test_len', text_test_len)
-            # else:
-            #     text_test_set = processor.read_dataset(data_path, ['test'])
-            text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], 0, -1)
+            text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], 0, -1, -1)
             print('text_test_len', text_test_len)
         elif config['dataset'] == 'oos-eval':
             text_test_set = processor.read_dataset(data_path, ['test', 'oos_test'])
