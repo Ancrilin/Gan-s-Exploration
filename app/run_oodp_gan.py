@@ -601,7 +601,6 @@ def main(args):
             else:
                 print('==============')
                 text_test_set = processor.read_dataset(data_path, ['test'])
-            print('text_test_len', text_test_len)
         elif config['dataset'] == 'oos-eval':
             text_test_set = processor.read_dataset(data_path, ['test', 'oos_test'])
         elif config['dataset'] == 'smp':
