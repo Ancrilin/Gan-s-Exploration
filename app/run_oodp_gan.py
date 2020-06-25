@@ -594,7 +594,13 @@ def main(args):
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
-            text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], 0, -1, -1)
+            if args.mode != -1:
+                text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], 0, -1, -1)
+                print('--------------')
+                print('text_test_len', text_test_len)
+            else:
+                print('==============')
+                text_test_set = processor.read_dataset(data_path, ['test'])
             print('text_test_len', text_test_len)
         elif config['dataset'] == 'oos-eval':
             text_test_set = processor.read_dataset(data_path, ['test', 'oos_test'])
