@@ -365,6 +365,8 @@ def main(args):
         all_detection_preds = torch.cat(all_detection_preds, 0).cpu()  # [length, 1]
         all_detection_binary_preds = convert_to_int_by_threshold(all_detection_preds.squeeze())  # [length, 1]
 
+        print('all_detection_preds', all_detection_preds.size())
+        print('all_binary_y', all_binary_y.size())
         # 计算损失
         detection_loss = detection_loss(all_detection_preds, all_binary_y.float())
         result['detection_loss'] = detection_loss
