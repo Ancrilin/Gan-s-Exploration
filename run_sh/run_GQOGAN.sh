@@ -8,8 +8,8 @@ lengths="15"
 # $4 save_path of my computer
 for len in ${lengths} ; do
   bash run_sh/run_oodp_gan.sh $1 $2 ${len} $3 GQOGAN-maxlen${len}_minlen-1_mode$2
+  mv oodp-gan GQOGAN_mode$2_maxlen${len}
+  mv GQOGAN-maxlen${len}_minlen-1_mode$2_gross_result.csv GQOGAN_mode$2_maxlen${len}
+  cp -r "/content/Gan-s-Exploration/GQOGAN_mode$2_maxlen${len}" "$4"
 done
-mv oodp-gan GQOGAN_mode$2_maxlen${len}
-mv GQOGAN-maxlen${len}_minlen-1_mode$2_gross_result.csv GQOGAN_mode$2_maxlen${len}
-cp -r "GQOGAN_mode$2_maxlen${len}" "$4"
 exit 0

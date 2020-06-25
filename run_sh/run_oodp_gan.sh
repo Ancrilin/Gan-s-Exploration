@@ -1,6 +1,6 @@
 #! /bin/bash
 
-seeds="16 123 256 512 1024 1536 2048 4096 8192"
+seeds="16"
 ## dataset_file="binary_true_smp_full_v2"
 ## $1 dataset_file
 ## $2 mode
