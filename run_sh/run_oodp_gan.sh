@@ -21,7 +21,7 @@ for seed in ${seeds} ; do
   --bert_type=bert-base-chinese \
   --dataset=smp \
   --data_file=$1 \
-  --output_dir=oodp-gan/oodp-gan-smp_maxlen$3_mode$2_s${seed} \
+  --output_dir=oodp-gan/oodp-gan-smp_maxlen$3_minlen$4_mode$2_s${seed} \
   --do_train \
   --do_eval \
   --do_test \
@@ -32,6 +32,6 @@ for seed in ${seeds} ; do
   --maxlen=$3 \
   --minlen=$4 \
   --result=$5
-  rm -rf oodp-gan/oodp-gan-smp_maxlen$3_mode$2_s${seed}/save
+  rm -rf oodp-gan/oodp-gan-smp_maxlen$3_minlen$4_mode$2_s${seed}/save
 done
 exit 0
