@@ -69,6 +69,8 @@ def main(args):
     logger.info('mode: {}'.format(args.mode))
     logger.info('maxlen: {}'.format(args.maxlen))
     logger.info('minlen: {}'.format(args.minlen))
+    logger.info('length_mode: {}'.format(args.length_mode))
+    logger.info('length_weight: {}'.format(args.length_weight))
 
     logger.info('Loading config...')
     bert_config = Config('config/bert.ini')
@@ -203,7 +205,7 @@ def main(args):
                 # real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
 
                 # todo length weight
-                length_sample = FloatTensor([0] * 32)
+                length_sample = FloatTensor([0] * batch)
                 if args.minlen != -1:
                     short_sample = (mask[:, args.minlen] == 0).float()
                     length_sample = length_sample.add(short_sample)
@@ -543,8 +545,8 @@ def main(args):
     if args.do_train:
         if config['data_file'].startswith('binary'):
             if args.length_mode == 0:
-                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlen)
-                text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen)
+                text_train_set, text_train_len = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlen)
+                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen)
             else:
                 text_train_set = processor.read_dataset(data_path, ['train'], args.mode)
                 text_dev_set = processor.read_dataset(data_path, ['val'], args.mode)
@@ -572,7 +574,7 @@ def main(args):
         logger.info('#################### eval result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
             if args.length_mode == 0:
-                text_dev_set= processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen)
+                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen)
             else:
                 text_dev_set = processor.read_dataset(data_path, ['val'], args.mode)
         elif config['dataset'] == 'oos-eval':
@@ -603,7 +605,7 @@ def main(args):
         logger.info('#################### test result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
             if args.length_mode == 0:
-                text_test_set = processor.read_dataset(data_path, ['test'], 0, -1, -1)
+                text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], 0, -1, -1)
             else:
                 text_test_set = processor.read_dataset(data_path, ['test'], args.mode)
         elif config['dataset'] == 'oos-eval':
@@ -611,7 +613,7 @@ def main(args):
         elif config['dataset'] == 'smp':
             text_test_set = processor.read_dataset(data_path, ['test'])
 
-        test_features = processor.convert_to_ids(text_dev_set)
+        test_features = processor.convert_to_ids(text_test_set)
         test_dataset = OOSDataset(test_features)
         test_result = test(test_dataset)
         # logger.info(test_result)
