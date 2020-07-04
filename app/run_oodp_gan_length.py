@@ -204,7 +204,7 @@ def main(args):
                 # weight = torch.ones(len(ood_sample)).to(device) - ood_sample * args.beta
                 # real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
 
-                # todo length weight
+                # length weight
                 length_sample = FloatTensor([0] * batch)
                 if args.minlen != -1:
                     short_sample = (mask[:, args.minlen] == 0).float()
