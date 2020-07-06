@@ -224,12 +224,16 @@ def main(args):
                 # only optimize length by weight
                 if args.optim_mode == 1:
                     weight -= exclude_sample
-                    weight -= (length_sample - exclude_sample) * (1 - args.length_weight)
+                    length_sample -= exclude_sample
+                    length_sample = (length_sample >0).float()
+                    weight -= length_sample * (1 - args.length_weight)
 
                 # only optimize sample by weight
                 if args.optim_mode == 2:
                     weight -= length_sample
-                    weight -= (exclude_sample - length_sample) * (1 - args.sample_weight)
+                    exclude_sample -= length_sample
+                    exclude_sample = (exclude_sample > 0).float()
+                    weight -= exclude_sample * (1 - args.sample_weight)
 
                 # optimize length and sample by weight
                 if args.optim_mode == 3:
