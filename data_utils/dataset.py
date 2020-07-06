@@ -14,10 +14,11 @@ class OOSDataset(Dataset):
         self.dataset = np.array(dataset)
 
     def __getitem__(self, index: int):
-        token_ids, mask_ids, type_ids, label_ids = self.dataset[index]
+        token_ids, mask_ids, type_ids, knowledge_tag, label_ids = self.dataset[index]
         return (torch.tensor(token_ids, dtype=torch.long),
                 torch.tensor(mask_ids, dtype=torch.long),
                 torch.tensor(type_ids, dtype=torch.long),
+                torch.tensor(knowledge_tag, dtype=torch.float32),
                 torch.tensor(label_ids, dtype=torch.float32),
                 )
 

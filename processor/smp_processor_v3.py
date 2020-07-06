@@ -24,7 +24,7 @@ class SMPProcessor_v3(BertProcessor):
             ids_data.append(self.parse_line(line))
         return ids_data
 
-    def read_dataset(self, path: str, data_types: list, mode=0, maxlen=-1, minlen=-1):
+    def read_dataset(self, path: str, data_types: list):
         """
         读取数据集文件
         :param path: 路径
@@ -44,12 +44,12 @@ class SMPProcessor_v3(BertProcessor):
                 #     continue
                 # if minlen != -1 and len(line['text']) <= minlen:
                 #     continue
-                if mode == 1 and line['knowledge'] == 1:
-                    continue
-                if mode == 2 and line['knowledge'] == 2:
-                    continue
-                if mode == 3 and line['knowledge'] != 0:
-                    continue
+                # if mode == 1 and line['knowledge'] == 1:
+                #     continue
+                # if mode == 2 and line['knowledge'] == 2:
+                #     continue
+                # if mode == 3 and line['knowledge'] != 0:
+                #     continue
                 dataset.append(line)
         return dataset
 
@@ -62,12 +62,14 @@ class SMPProcessor_v3(BertProcessor):
     def parse_line(self, line: dict) -> list:
         """
         :param line: [text, label]
-        :return: [text_ids, mask, type_ids, label_ids]
+        :return: [text_ids, mask, type_ids, knowledge_tag, label_ids]
         """
         text = line['text']
         label = line['domain']
+        # todo knowledge tag
+        knowledge = line['knowledge']
 
-        ids = self.parse_text_to_bert_token(text) + [self.parse_label(label)]
+        ids = self.parse_text_to_bert_token(text) + [knowledge] + [self.parse_label(label)]
         return ids
 
     def parse_text(self, text) -> (list, list, list):

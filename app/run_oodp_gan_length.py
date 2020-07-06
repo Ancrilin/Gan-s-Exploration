@@ -69,8 +69,9 @@ def main(args):
     logger.info('mode: {}'.format(args.mode))
     logger.info('maxlen: {}'.format(args.maxlen))
     logger.info('minlen: {}'.format(args.minlen))
-    logger.info('length_mode: {}'.format(args.length_mode))
+    logger.info('optim_mode: {}'.format(args.optim_mode))
     logger.info('length_weight: {}'.format(args.length_weight))
+    logger.info('sample_weight: {}'.format(args.sample_weight))
 
     logger.info('Loading config...')
     bert_config = Config('config/bert.ini')
@@ -110,12 +111,13 @@ def main(args):
             processor = SMPProcessor(bert_config, maxlen=32)
             print('processor')
         else:
-            if args.length_mode == 1:
-                processor = SMPProcessor_v3(bert_config, maxlen=32)
-                print('processor_v3')
-            else:
+            if args.optim_mode == 0:
                 processor = SMPProcessor_v2(bert_config, maxlen=32)
                 print('processor_v2')
+            else:
+                # todo processor choice
+                processor = SMPProcessor_v3(bert_config, maxlen=32)
+                print('processor_v3')
     else:
         raise ValueError('The dataset {} is not supported.'.format(args.dataset))
 
@@ -197,7 +199,7 @@ def main(args):
 
             for sample in tqdm.tqdm(train_dataloader):
                 sample = (i.to(device) for i in sample)
-                token, mask, type_ids, y = sample
+                token, mask, type_ids, knowledge_tag, y = sample
                 batch = len(token)
 
                 ood_sample = (y==0.0)
@@ -213,7 +215,30 @@ def main(args):
                     long_sample = mask[:, args.maxlen].float()
                     length_sample = length_sample.add(long_sample)
 
-                weight = torch.ones(len(length_sample)).to(device) - length_sample * (1 - args.length_weight)
+                # todo knowledge sample weight
+                exclude_sample = knowledge_tag
+
+                # initailize weight
+                weight = torch.ones(batch).to(device)
+
+                # only optimize length by weight
+                if args.optim_mode == 1:
+                    weight -= exclude_sample
+                    weight -= (length_sample - exclude_sample) * (1 - args.length_weight)
+
+                # only optimize sample by weight
+                if args.optim_mode == 2:
+                    weight -= length_sample
+                    weight -= (exclude_sample - length_sample) * (1 - args.sample_weight)
+
+                # optimize length and sample by weight
+                if args.optim_mode == 3:
+                    alpha = 0.5
+                    beta = 0.5
+                    weight = torch.ones(len(length_sample)).to(device) \
+                             - alpha * length_sample * (1 - args.length_weight) \
+                             - beta * exclude_sample * (1 - args.sample_weight)
+
                 real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
 
                 # the label used to train generator and discriminator.
@@ -544,12 +569,13 @@ def main(args):
 
     if args.do_train:
         if config['data_file'].startswith('binary'):
-            if args.length_mode == 0:
+            if args.optim_mode == 0:
                 text_train_set, text_train_len = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlen)
                 text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen)
             else:
-                text_train_set = processor.read_dataset(data_path, ['train'], args.mode)
-                text_dev_set = processor.read_dataset(data_path, ['val'], args.mode)
+                # optimize length or sample by weight
+                text_train_set = processor.read_dataset(data_path, ['train'])
+                text_dev_set = processor.read_dataset(data_path, ['val'])
 
         elif config['dataset'] == 'oos-eval':
             text_train_set = processor.read_dataset(data_path, ['train', 'oos_train'])
@@ -573,10 +599,10 @@ def main(args):
     if args.do_eval:
         logger.info('#################### eval result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
-            if args.length_mode == 0:
+            if args.optim_mode == 0:
                 text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen)
             else:
-                text_dev_set = processor.read_dataset(data_path, ['val'], args.mode)
+                text_dev_set = processor.read_dataset(data_path, ['val'])
         elif config['dataset'] == 'oos-eval':
             text_dev_set = processor.read_dataset(data_path, ['val', 'oos_val'])
         elif config['dataset'] == 'smp':
@@ -604,10 +630,10 @@ def main(args):
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
-            if args.length_mode == 0:
+            if args.optim_mode == 0:
                 text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], 0, -1, -1)
             else:
-                text_test_set = processor.read_dataset(data_path, ['test'], args.mode)
+                text_test_set = processor.read_dataset(data_path, ['test'])
         elif config['dataset'] == 'oos-eval':
             text_test_set = processor.read_dataset(data_path, ['test', 'oos_test'])
         elif config['dataset'] == 'smp':
@@ -772,6 +798,9 @@ if __name__ == '__main__':
                         choices={'gan', 'dgan', 'lstm_gan', 'cnn_gan'},
                         help='choose gan model')
     parser.add_argument('--length_weight', type=float, default=0.1, help="Weight of short and long sample loss for Discriminator.")
+    # todo sample weight
+    parser.add_argument('--sample_weight', type=float, default=0.1, help="Weight of excluded sample loss for Discriminator.")
+
 
     # data config
     parser.add_argument('--mode', type=int, default=-1)
@@ -779,7 +808,12 @@ if __name__ == '__main__':
     parser.add_argument('--minlen', type=int, default=-1)
     parser.add_argument('--result', type=str, default="no")
     parser.add_argument('--ood', action='store_true', default=False)
-    parser.add_argument('--length_mode', type=int, default=0)
+    # todo mode
+    parser.add_argument('--optim_mode', type=int, default=0,
+                        help="0: do not optimize by weight; "
+                             "1: only optimize length by weight; "
+                             "2: only optimize sample by weight;"
+                             "3: optimize length and sample by weight")
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)

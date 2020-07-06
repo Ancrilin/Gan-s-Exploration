@@ -1,12 +1,12 @@
 #! /bin/bash
 
-weights="0.2 0.3 0.4 0.5 0.6"
-# dataset_file="binary_true_smp_full_v2_length"
+weights="0.2 0.4 0.6 0.8"
+# dataset_file="binary_true_smp_full_v2"
 # $1 dataset_file
 # $2 mode
 # $3 maxlen
 # $4 minlen
-# $5 length_mode
+# $5 optim_mode
 # $6 length_weight
 # $7 save_path of my computer
 for weight in ${weights} ; do
