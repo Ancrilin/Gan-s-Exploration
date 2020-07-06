@@ -383,7 +383,7 @@ def main(args):
 
         for sample in tqdm.tqdm(dev_dataloader):
             sample = (i.to(device) for i in sample)
-            token, mask, type_ids, y = sample
+            token, mask, type_ids, knowledge_tag, y = sample
             batch = len(token)
 
             # -------------------------evaluate D------------------------- #
@@ -474,7 +474,7 @@ def main(args):
 
         for sample in tqdm.tqdm(test_dataloader):
             sample = (i.to(device) for i in sample)
-            token, mask, type_ids, y = sample
+            token, mask, type_ids, knowledge_tag, y = sample
             batch = len(token)
 
             # -------------------------evaluate D------------------------- #
