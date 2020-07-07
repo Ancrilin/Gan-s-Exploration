@@ -111,13 +111,8 @@ def main(args):
             processor = SMPProcessor(bert_config, maxlen=32)
             print('processor')
         else:
-            if args.optim_mode == 0:
-                processor = SMPProcessor_v2(bert_config, maxlen=32)
-                print('processor_v2')
-            else:
-                # todo processor choice
-                processor = SMPProcessor_v3(bert_config, maxlen=32)
-                print('processor_v3')
+            processor = SMPProcessor_v3(bert_config, maxlen=32)
+            print('processor_v3')
     else:
         raise ValueError('The dataset {} is not supported.'.format(args.dataset))
 
@@ -215,7 +210,7 @@ def main(args):
                     long_sample = mask[:, args.maxlen].float()
                     length_sample = length_sample.add(long_sample)
 
-                # todo knowledge sample weight
+                # get knowledge sample weight by knowledge_tag
                 exclude_sample = knowledge_tag
 
                 # initailize weight
@@ -223,6 +218,7 @@ def main(args):
 
                 # only optimize length by weight
                 if args.optim_mode == 1:
+                    # set all exclude_sample's weight to 0
                     weight -= exclude_sample
                     length_sample -= exclude_sample
                     length_sample = (length_sample >0).float()
@@ -230,6 +226,7 @@ def main(args):
 
                 # only optimize sample by weight
                 if args.optim_mode == 2:
+                    # set all length_sample's weight to 0
                     weight -= length_sample
                     exclude_sample -= length_sample
                     exclude_sample = (exclude_sample > 0).float()
@@ -258,7 +255,7 @@ def main(args):
                 real_f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
                 discriminator_output = discriminator_output.squeeze()
                 # real_loss = adversarial_loss(discriminator_output, (y != 0.0).float())
-                real_loss = real_loss_func(discriminator_output, y.float())
+                real_loss = real_loss_func(discriminator_output, (y != 0.0).float())
                 if n_class > 2:  # 大于2表示除了训练判别器还要训练分类器
                     class_loss = classified_loss(classification_output, y.long())
                     real_loss += class_loss
@@ -574,12 +571,12 @@ def main(args):
     if args.do_train:
         if config['data_file'].startswith('binary'):
             if args.optim_mode == 0:
-                text_train_set, text_train_len = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlen)
-                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen)
+                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlene, pre_exclude=True)
             else:
                 # optimize length or sample by weight
-                text_train_set = processor.read_dataset(data_path, ['train'])
-                text_dev_set = processor.read_dataset(data_path, ['val'])
+                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlen, pre_exclude=False)
+
+            text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen, pre_exclude=True)
 
         elif config['dataset'] == 'oos-eval':
             text_train_set = processor.read_dataset(data_path, ['train', 'oos_train'])
@@ -603,10 +600,9 @@ def main(args):
     if args.do_eval:
         logger.info('#################### eval result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
-            if args.optim_mode == 0:
-                text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen)
-            else:
-                text_dev_set = processor.read_dataset(data_path, ['val'])
+            #  don't optim dev_set by weight, so pre_exclude it
+            text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen, pre_exclude=True)
+
         elif config['dataset'] == 'oos-eval':
             text_dev_set = processor.read_dataset(data_path, ['val', 'oos_val'])
         elif config['dataset'] == 'smp':
@@ -634,10 +630,8 @@ def main(args):
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
-            if args.optim_mode == 0:
-                text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], 0, -1, -1)
-            else:
-                text_test_set = processor.read_dataset(data_path, ['test'])
+            # always keep test_set unchanged
+            text_test_set = processor.read_dataset(data_path, ['test'])
         elif config['dataset'] == 'oos-eval':
             text_test_set = processor.read_dataset(data_path, ['test', 'oos_test'])
         elif config['dataset'] == 'smp':
@@ -802,7 +796,6 @@ if __name__ == '__main__':
                         choices={'gan', 'dgan', 'lstm_gan', 'cnn_gan'},
                         help='choose gan model')
     parser.add_argument('--length_weight', type=float, default=0.1, help="Weight of short and long sample loss for Discriminator.")
-    # todo sample weight
     parser.add_argument('--sample_weight', type=float, default=0.1, help="Weight of excluded sample loss for Discriminator.")
 
 
@@ -812,7 +805,6 @@ if __name__ == '__main__':
     parser.add_argument('--minlen', type=int, default=-1)
     parser.add_argument('--result', type=str, default="no")
     parser.add_argument('--ood', action='store_true', default=False)
-    # todo mode
     parser.add_argument('--optim_mode', type=int, default=0,
                         help="0: do not optimize by weight; "
                              "1: only optimize length by weight; "

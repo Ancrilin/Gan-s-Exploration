@@ -24,7 +24,7 @@ class SMPProcessor_v3(BertProcessor):
             ids_data.append(self.parse_line(line))
         return ids_data
 
-    def read_dataset(self, path: str, data_types: list):
+    def read_dataset(self, path: str, data_types: list, mode=0, maxlen=-1, minlen=-1, pre_exclude=False):
         """
         读取数据集文件
         :param path: 路径
@@ -33,23 +33,23 @@ class SMPProcessor_v3(BertProcessor):
         :param maxlen: 最大长度
         :return:
         """
-        text_len = {}
+        self.mode = mode
         dataset = []
         with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         for data_type in data_types:
             for line in data[data_type]:
-                # dataset.append(line)
-                # if maxlen != -1 and len(line['text']) > maxlen:
-                #     continue
-                # if minlen != -1 and len(line['text']) <= minlen:
-                #     continue
-                # if mode == 1 and line['knowledge'] == 1:
-                #     continue
-                # if mode == 2 and line['knowledge'] == 2:
-                #     continue
-                # if mode == 3 and line['knowledge'] != 0:
-                #     continue
+                if pre_exclude:
+                    if maxlen != -1 and len(line['text']) > maxlen:
+                        continue
+                    if minlen != -1 and len(line['text']) <= minlen:
+                        continue
+                    if mode == 1 and line['knowledge'] == 1:
+                        continue
+                    if mode == 2 and line['knowledge'] == 2:
+                        continue
+                    if mode == 3 and line['knowledge'] != 0:
+                        continue
                 dataset.append(line)
         return dataset
 
@@ -66,10 +66,13 @@ class SMPProcessor_v3(BertProcessor):
         """
         text = line['text']
         label = line['domain']
-        # todo knowledge tag
-        knowledge = line['knowledge']
+        # knowledge tag
+        if 'knowledge' in line and self.mode != 0:
+            knowledge_tag = line['knowledge']
+        else:
+            knowledge_tag = 0
 
-        ids = self.parse_text_to_bert_token(text) + [knowledge] + [self.parse_label(label)]
+        ids = self.parse_text_to_bert_token(text) + [knowledge_tag] + [self.parse_label(label)]
         return ids
 
     def parse_text(self, text) -> (list, list, list):
