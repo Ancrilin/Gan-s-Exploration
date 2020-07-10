@@ -21,7 +21,7 @@ from sklearn.metrics import roc_auc_score
 
 import metrics
 from config import Config
-from data_utils import OOSDataset
+from data_utils import OOSDataset, SMPDataset
 from logger import Logger
 from metrics import plot_confusion_matrix
 from processor.oos_processor import OOSProcessor
@@ -194,51 +194,76 @@ def main(args):
 
             for sample in tqdm.tqdm(train_dataloader):
                 sample = (i.to(device) for i in sample)
-                token, mask, type_ids, knowledge_tag, y = sample
-                batch = len(token)
+                if args.dataset == 'smp':
+                    token, mask, type_ids, knowledge_tag, y = sample
+                    batch = len(token)
 
-                ood_sample = (y==0.0)
-                # weight = torch.ones(len(ood_sample)).to(device) - ood_sample * args.beta
-                # real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
+                    ood_sample = (y == 0.0)
+                    # weight = torch.ones(len(ood_sample)).to(device) - ood_sample * args.beta
+                    # real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
 
-                # length weight
-                length_sample = FloatTensor([0] * batch)
-                if args.minlen != -1:
-                    short_sample = (mask[:, args.minlen] == 0).float()
-                    length_sample = length_sample.add(short_sample)
-                if args.maxlen != -1:
-                    long_sample = mask[:, args.maxlen].float()
-                    length_sample = length_sample.add(long_sample)
+                    # length weight
+                    length_sample = FloatTensor([0] * batch)
+                    if args.minlen != -1:
+                        short_sample = (mask[:, args.minlen] == 0).float()
+                        length_sample = length_sample.add(short_sample)
+                    if args.maxlen != -1:
+                        long_sample = mask[:, args.maxlen].float()
+                        length_sample = length_sample.add(long_sample)
 
-                # get knowledge sample weight by knowledge_tag
-                exclude_sample = knowledge_tag
+                    # get knowledge sample weight by knowledge_tag
+                    exclude_sample = knowledge_tag
 
-                # initailize weight
-                weight = torch.ones(batch).to(device)
+                    # initailize weight
+                    weight = torch.ones(batch).to(device)
 
-                # only optimize length by weight
-                if args.optim_mode == 1:
-                    # set all exclude_sample's weight to 0
-                    weight -= exclude_sample
-                    length_sample -= exclude_sample
-                    length_sample = (length_sample >0).float()
-                    weight -= length_sample * (1 - args.length_weight)
+                    # only optimize length by weight
+                    if args.optim_mode == 1:
+                        # set all exclude_sample's weight to 0
+                        weight -= exclude_sample
+                        length_sample -= exclude_sample
+                        length_sample = (length_sample > 0).float()
+                        weight -= length_sample * (1 - args.length_weight)
 
-                # only optimize sample by weight
-                if args.optim_mode == 2:
-                    # set all length_sample's weight to 0
-                    weight -= length_sample
-                    exclude_sample -= length_sample
-                    exclude_sample = (exclude_sample > 0).float()
-                    weight -= exclude_sample * (1 - args.sample_weight)
+                    # only optimize sample by weight
+                    if args.optim_mode == 2:
+                        # set all length_sample's weight to 0
+                        weight -= length_sample
+                        exclude_sample -= length_sample
+                        exclude_sample = (exclude_sample > 0).float()
+                        weight -= exclude_sample * (1 - args.sample_weight)
 
-                # optimize length and sample by weight
-                if args.optim_mode == 3:
-                    alpha = 0.5
-                    beta = 0.5
-                    weight = torch.ones(len(length_sample)).to(device) \
-                             - alpha * length_sample * (1 - args.length_weight) \
-                             - beta * exclude_sample * (1 - args.sample_weight)
+                    # optimize length and sample by weight
+                    if args.optim_mode == 3:
+                        alpha = 0.5
+                        beta = 0.5
+                        weight = torch.ones(len(length_sample)).to(device) \
+                                 - alpha * length_sample * (1 - args.length_weight) \
+                                 - beta * exclude_sample * (1 - args.sample_weight)
+
+                if args.dataset == 'oos-eval':
+                    token, mask, type_ids, y = sample
+                    batch = len(token)
+
+                    ood_sample = (y == 0.0)
+                    # weight = torch.ones(len(ood_sample)).to(device) - ood_sample * args.beta
+                    # real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
+
+                    # length weight
+                    length_sample = FloatTensor([0] * batch)
+                    if args.minlen != -1:
+                        short_sample = (mask[:, args.minlen] == 0).float()
+                        length_sample = length_sample.add(short_sample)
+                    if args.maxlen != -1:
+                        long_sample = mask[:, args.maxlen].float()
+                        length_sample = length_sample.add(long_sample)
+
+                    # initailize weight
+                    weight = torch.ones(batch).to(device)
+
+                    # only optimize length by weight
+                    if args.optim_mode == 1:
+                        weight -= length_sample * (1 - args.length_weight)
 
                 real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
 
@@ -384,7 +409,10 @@ def main(args):
 
         for sample in tqdm.tqdm(dev_dataloader):
             sample = (i.to(device) for i in sample)
-            token, mask, type_ids, knowledge_tag, y = sample
+            if args.dataset == 'smp':
+                token, mask, type_ids, knowledge_tag, y = sample
+            if args.dataset == 'oos-eval':
+                token, mask, type_ids, y = sample
             batch = len(token)
 
             # -------------------------evaluate D------------------------- #
@@ -475,7 +503,10 @@ def main(args):
 
         for sample in tqdm.tqdm(test_dataloader):
             sample = (i.to(device) for i in sample)
-            token, mask, type_ids, knowledge_tag, y = sample
+            if args.dataset == 'smp':
+                token, mask, type_ids, knowledge_tag, y = sample
+            if args.dataset == 'oos-eval':
+                token, mask, type_ids, y = sample
             batch = len(token)
 
             # -------------------------evaluate D------------------------- #
@@ -590,8 +621,13 @@ def main(args):
 
         train_features = processor.convert_to_ids(text_train_set)
         dev_features = processor.convert_to_ids(text_dev_set)
-        train_dataset = OOSDataset(train_features)
-        dev_dataset = OOSDataset(dev_features)
+
+        if config['dataset'] == 'oos-eval':
+            train_dataset = OOSDataset(train_features)
+            dev_dataset = OOSDataset(dev_features)
+        if config['dataset'] == 'smp':
+            train_dataset = SMPDataset(train_features)
+            dev_dataset = SMPDataset(dev_features)
 
         train_result = train(train_dataset, dev_dataset)
         # save_feature(train_result['all_features'], os.path.join(args.output_dir, 'train_feature'))
@@ -610,7 +646,12 @@ def main(args):
 
 
         dev_features = processor.convert_to_ids(text_dev_set)
-        dev_dataset = OOSDataset(dev_features)
+
+        if config['dataset'] == 'oos-eval':
+            dev_dataset = OOSDataset(dev_features)
+        if config['dataset'] == 'smp':
+            dev_dataset = SMPDataset(dev_features)
+
         eval_result = eval(dev_dataset)
         # logger.info(eval_result)
         logger.info('eval_eer: {}'.format(eval_result['eer']))
@@ -638,7 +679,12 @@ def main(args):
             text_test_set = processor.read_dataset(data_path, ['test'])
 
         test_features = processor.convert_to_ids(text_test_set)
-        test_dataset = OOSDataset(test_features)
+
+        if config['dataset'] == 'oos-eval':
+            test_dataset = OOSDataset(test_features)
+        if config['dataset'] == 'smp':
+            test_dataset = SMPDataset(test_features)
+
         test_result = test(test_dataset)
         # logger.info(test_result)
         logger.info('test_eer: {}'.format(test_result['eer']))
@@ -795,8 +841,8 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, required=True,
                         choices={'gan', 'dgan', 'lstm_gan', 'cnn_gan'},
                         help='choose gan model')
-    parser.add_argument('--length_weight', type=float, default=0.1, help="Weight of short and long sample loss for Discriminator.")
-    parser.add_argument('--sample_weight', type=float, default=0.1, help="Weight of excluded sample loss for Discriminator.")
+    parser.add_argument('--length_weight', type=float, default=0, help="Weight of short and long sample loss for Discriminator.")
+    parser.add_argument('--sample_weight', type=float, default=0, help="Weight of excluded sample loss for Discriminator.")
 
 
     # data config

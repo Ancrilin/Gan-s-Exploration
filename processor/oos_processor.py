@@ -28,7 +28,7 @@ class OOSProcessor(BertProcessor):
             ids_data.append(self.parse_line(line))
         return ids_data
 
-    def read_dataset(self, path: str, data_types: list):
+    def read_dataset(self, path: str, data_types: list, mode=0, maxlen=-1, minlen=-1, pre_exclude=False):
         """
         读取数据集文件
         :param path: 路径
@@ -41,6 +41,11 @@ class OOSProcessor(BertProcessor):
             data = json.load(f)
         for data_type in data_types:
             for line in data[data_type]:
+                if pre_exclude:
+                    if maxlen != -1 and len(line[0]) > maxlen:
+                        continue
+                    if minlen != -1 and len(line[0]) <= minlen:
+                        continue
                 dataset.append(line)
         return dataset
 

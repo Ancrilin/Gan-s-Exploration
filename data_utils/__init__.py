@@ -1,4 +1,5 @@
 from .dataset import OOSDataset
+from .dataset import SMPDataset
 from .pos_tagging_dataset import PosOOSDataset
 from torch.utils.data import DataLoader, Dataset
 
