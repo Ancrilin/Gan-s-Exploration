@@ -1,7 +1,7 @@
 #! /bin/bash
 
-lengths="0 2 3 4 5 6"
-# dataset_file="binary_true_smp_full_v2"
+lengths="-1 2 3 4 5 6"
+# dataset_file="binary_undersample"
 # $1 dataset_file
 # $2 maxlen
 # $3 minlen
