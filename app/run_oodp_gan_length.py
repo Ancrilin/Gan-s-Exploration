@@ -66,6 +66,8 @@ def main(args):
     logger.info('model: {}'.format(args.model))
     check_manual_seed(SEED)
     check_args(args)
+    if 0 <= args.beta <= 1:
+        logger.info('beta: {}'.format(args.beta))
     logger.info('mode: {}'.format(args.mode))
     logger.info('maxlen: {}'.format(args.maxlen))
     logger.info('minlen: {}'.format(args.minlen))
@@ -217,6 +219,10 @@ def main(args):
                     # initailize weight
                     weight = torch.ones(batch).to(device)
 
+                    # todo optimize without weights
+                    if args.optim_mode == 0 and 0 <= args.beta <= 1:
+                        weight -= ood_sample * args.beta
+
                     # only optimize length by weight
                     if args.optim_mode == 1:
                         # set all exclude_sample's weight to 0
@@ -225,21 +231,39 @@ def main(args):
                         length_sample = (length_sample > 0).float()
                         weight -= length_sample * (1 - args.length_weight)
 
+                        # todo set ood sample weight
+                        if 0 <= args.beta <= 1:
+                            ood_sample -= exclude_sample
+                            ood_sample = (ood_sample > 0).float()
+                            temp = torch.ones(batch)
+                            temp -= ood_sample * args.beta
+                            weight *= temp
+
                     # only optimize sample by weight
                     if args.optim_mode == 2:
                         # set all length_sample's weight to 0
                         weight -= length_sample
+
                         exclude_sample -= length_sample
                         exclude_sample = (exclude_sample > 0).float()
                         weight -= exclude_sample * (1 - args.sample_weight)
 
+                        # todo set ood sample weight
+                        if 0 <= args.beta <= 1:
+                            ood_sample -= length_sample
+                            ood_sample = (ood_sample > 0).float()
+                            temp = torch.ones(batch)
+                            temp -= ood_sample * args.beta
+                            weight *= temp
+
+
                     # optimize length and sample by weight
-                    if args.optim_mode == 3:
-                        alpha = 0.5
-                        beta = 0.5
-                        weight = torch.ones(len(length_sample)).to(device) \
-                                 - alpha * length_sample * (1 - args.length_weight) \
-                                 - beta * exclude_sample * (1 - args.sample_weight)
+                    # if args.optim_mode == 3:
+                    #     alpha = 0.5
+                    #     beta = 0.5
+                    #     weight = torch.ones(len(length_sample)).to(device) \
+                    #              - alpha * length_sample * (1 - args.length_weight) \
+                    #              - beta * exclude_sample * (1 - args.sample_weight)
 
                 if args.dataset == 'oos-eval':
                     token, mask, type_ids, y = sample
@@ -261,9 +285,21 @@ def main(args):
                     # initailize weight
                     weight = torch.ones(batch).to(device)
 
+                    # todo optimize without weights
+                    if args.optim_mode == 0 and 0 <= args.beta <= 1:
+                        weight -= ood_sample * args.beta
+
                     # only optimize length by weight
                     if args.optim_mode == 1:
                         weight -= length_sample * (1 - args.length_weight)
+
+                        # todo set ood sample weight
+                        if 0 <= args.beta <= 1:
+                            ood_sample -= length_sample
+                            ood_sample = (ood_sample > 0).float()
+                            temp = torch.ones(batch)
+                            temp -= ood_sample * args.beta
+                            weight *= temp
 
                 real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
 
@@ -297,8 +333,11 @@ def main(args):
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 fake_discriminator_output = D.detect_only(fake_feature)
-                # fake_loss = args.beta * adversarial_loss(fake_discriminator_output, fake_label)
-                fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
+                # todo beta of G
+                if 0 <= args.beta <= 1:
+                    fake_loss = args.beta * adversarial_loss(fake_discriminator_output, fake_label)
+                else:
+                    fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
                 fake_loss.backward()
                 optimizer_D.step()
 
@@ -832,7 +871,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--D_lr', type=float, default=1e-5, help="Learning rate for Discriminator.")
     parser.add_argument('--G_lr', type=float, default=1e-5, help="Learning rate for Generator.")
-    parser.add_argument('--beta', type=float, default=0.1, help="Weight of fake sample loss for Discriminator.")
+    parser.add_argument('--beta', type=float, default=-1, help="Weight of fake sample loss for Discriminator.")
 
     parser.add_argument('--bert_lr', type=float, default=2e-4, help="Learning rate for Generator.")
     parser.add_argument('--fine_tune', action='store_true',
@@ -852,10 +891,10 @@ if __name__ == '__main__':
     parser.add_argument('--result', type=str, default="no")
     parser.add_argument('--ood', action='store_true', default=False)
     parser.add_argument('--optim_mode', type=int, default=0,
-                        help="0: do not optimize by weight; "
-                             "1: only optimize length by weight; "
-                             "2: only optimize sample by weight;"
-                             "3: optimize length and sample by weight")
+                        help="0: optimize both, and optimize without weight; "
+                             "1: optimize both, and only optimize length by weight; "
+                             "2: optimize both, and only optimize sample by weight;"
+                             "3: optimize both, and optimize both by weight")
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
