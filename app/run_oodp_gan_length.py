@@ -200,7 +200,7 @@ def main(args):
                     token, mask, type_ids, knowledge_tag, y = sample
                     batch = len(token)
 
-                    ood_sample = (y == 0.0)
+                    ood_sample = (y == 0.0).float()
                     # weight = torch.ones(len(ood_sample)).to(device) - ood_sample * args.beta
                     # real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
 
@@ -269,7 +269,7 @@ def main(args):
                     token, mask, type_ids, y = sample
                     batch = len(token)
 
-                    ood_sample = (y == 0.0)
+                    ood_sample = (y == 0.0).float()
                     # weight = torch.ones(len(ood_sample)).to(device) - ood_sample * args.beta
                     # real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
 
