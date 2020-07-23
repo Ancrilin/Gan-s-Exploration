@@ -189,10 +189,13 @@ def main(args):
             E.train()
 
             G_train_loss = 0
+            G_d_loss = 0
             D_fake_loss = 0
             D_real_loss = 0
             FM_train_loss = 0
             D_class_loss = 0
+
+            G_features = []
 
             for sample in tqdm.tqdm(train_dataloader):
                 sample = (i.to(device) for i in sample)
@@ -219,7 +222,7 @@ def main(args):
                     # initailize weight
                     weight = torch.ones(batch).to(device)
 
-                    # todo optimize without weights
+                    # optimize without weights
                     if args.optim_mode == 0 and 0 <= args.beta <= 1:
                         weight -= ood_sample * args.beta
 
@@ -231,7 +234,7 @@ def main(args):
                         length_sample = (length_sample > 0).float()
                         weight -= length_sample * (1 - args.length_weight)
 
-                        # todo set ood sample weight
+                        # set ood sample weight
                         if 0 <= args.beta <= 1:
                             ood_sample -= exclude_sample
                             ood_sample = (ood_sample > 0).float()
@@ -248,7 +251,7 @@ def main(args):
                         exclude_sample = (exclude_sample > 0).float()
                         weight -= exclude_sample * (1 - args.sample_weight)
 
-                        # todo set ood sample weight
+                        # set ood sample weight
                         if 0 <= args.beta <= 1:
                             ood_sample -= length_sample
                             ood_sample = (ood_sample > 0).float()
@@ -285,7 +288,7 @@ def main(args):
                     # initailize weight
                     weight = torch.ones(batch).to(device)
 
-                    # todo optimize without weights
+                    # optimize without weights
                     if args.optim_mode == 0 and 0 <= args.beta <= 1:
                         weight -= ood_sample * args.beta
 
@@ -293,7 +296,7 @@ def main(args):
                     if args.optim_mode == 1:
                         weight -= length_sample * (1 - args.length_weight)
 
-                        # todo set ood sample weight
+                        # set ood sample weight
                         if 0 <= args.beta <= 1:
                             ood_sample -= length_sample
                             ood_sample = (ood_sample > 0).float()
@@ -333,7 +336,7 @@ def main(args):
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 fake_discriminator_output = D.detect_only(fake_feature)
-                # todo beta of G
+                # beta of fake
                 if 0 <= args.beta <= 1:
                     fake_loss = args.beta * adversarial_loss(fake_discriminator_output, fake_label)
                 else:
@@ -351,6 +354,10 @@ def main(args):
                 else:
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
+
+                if args.do_vis:
+                    G_features.append(fake_f_vector.detach())
+
                 gd_loss = adversarial_loss(D_decision, valid_label)
                 fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
                 g_loss = gd_loss + 0 * fm_loss
@@ -361,15 +368,17 @@ def main(args):
 
                 D_fake_loss += fake_loss.detach()
                 D_real_loss += real_loss.detach()
+                G_d_loss += g_loss.detach()
                 G_train_loss += g_loss.detach() + fm_loss.detach()
                 FM_train_loss += fm_loss.detach()
 
-            # logger.info('[Epoch {}] Train: D_fake_loss: {}'.format(i, D_fake_loss / n_sample))
-            # logger.info('[Epoch {}] Train: D_real_loss: {}'.format(i, D_real_loss / n_sample))
+            logger.info('[Epoch {}] Train: D_fake_loss: {}'.format(i, D_fake_loss / n_sample))
+            logger.info('[Epoch {}] Train: D_real_loss: {}'.format(i, D_real_loss / n_sample))
             # logger.info('[Epoch {}] Train: D_class_loss: {}'.format(i, D_class_loss / n_sample))
-            # logger.info('[Epoch {}] Train: G_train_loss: {}'.format(i, G_train_loss / n_sample))
-            # logger.info('[Epoch {}] Train: FM_train_loss: {}'.format(i, FM_train_loss / n_sample))
-            # logger.info('---------------------------------------------------------------------------')
+            logger.info('[Epoch {}] Train: G_train_loss: {}'.format(i, G_train_loss / n_sample))
+            logger.info('[Epoch {}] Train: G_d_loss: {}'.format(i, G_d_loss / n_sample))
+            logger.info('[Epoch {}] Train: FM_train_loss: {}'.format(i, FM_train_loss / n_sample))
+            logger.info('---------------------------------------------------------------------------')
 
             D_total_fake_loss.append(D_fake_loss / n_sample)
             D_total_real_loss.append(D_real_loss / n_sample)
@@ -380,6 +389,17 @@ def main(args):
             if dev_dataset:
                 # logger.info('#################### eval result at step {} ####################'.format(global_step))
                 eval_result = eval(dev_dataset)
+
+                if args.do_vis and args.do_g_eval_vis:
+                    G_features = torch.cat(G_features, 0).cpu().numpy()
+
+                    features = np.concatenate([eval_result['all_features'], G_features], axis=0)
+                    features = TSNE(n_components=2, verbose=1, n_jobs=-1).fit_transform(features)
+                    labels = np.concatenate([eval_result['all_binary_y'], np.array([-1] * len(G_features))], 0).reshape(-1, 1)
+
+                    data = np.concatenate([features, labels], 1)
+                    fig = scatter_plot(data, processor)
+                    fig.savefig(os.path.join(args.output_dir, 'plot_epoch_' + str(i) + '.png'))
 
                 valid_detection_loss.append(eval_result['detection_loss'])
                 valid_oos_ind_precision.append(eval_result['oos_ind_precision'])
@@ -445,6 +465,7 @@ def main(args):
 
         all_detection_preds = []
         all_class_preds = []
+        all_features = []
 
         for sample in tqdm.tqdm(dev_dataloader):
             sample = (i.to(device) for i in sample)
@@ -471,6 +492,8 @@ def main(args):
                 else:
                     f_vector, discriminator_output = D.detect_only(real_feature, return_feature=True)
                     all_detection_preds.append(discriminator_output)
+                if args.do_vis:
+                    all_features.append(f_vector)
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
@@ -511,6 +534,9 @@ def main(args):
         if n_class > 2:
             result['class_loss'] = class_loss
             result['class_acc'] = class_acc
+        if args.do_vis:
+            all_features = torch.cat(all_features, 0).cpu().numpy()
+            result['all_features'] = all_features
 
         freeze_data['valid_all_y'] = all_y
         freeze_data['vaild_all_pred'] = all_detection_binary_preds
@@ -670,7 +696,6 @@ def main(args):
 
         train_result = train(train_dataset, dev_dataset)
         # save_feature(train_result['all_features'], os.path.join(args.output_dir, 'train_feature'))
-
 
     if args.do_eval:
         logger.info('#################### eval result at step {} ####################'.format(global_step))
@@ -853,6 +878,9 @@ if __name__ == '__main__':
 
     parser.add_argument('--do_vis', action='store_true',
                         help='Do visualization.')
+
+    parser.add_argument('--do_g_eval_vis', action='store_true',
+                        help='Do visualization of generator and eval data feature.')
 
     parser.add_argument('--output_dir', required=True,
                         help='The output directory saving model and logging file.')

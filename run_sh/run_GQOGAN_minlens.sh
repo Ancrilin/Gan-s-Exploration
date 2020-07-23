@@ -1,7 +1,7 @@
 #! /bin/bash
 
-lengths="6 5 4 3 2"
-betas="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1"
+lengths="7"
+betas="-1" # 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1
 # dataset_file="binary_true_smp_full_v2"
 # $1 dataset_file
 # $2 beta
