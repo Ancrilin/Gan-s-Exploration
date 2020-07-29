@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import json
 import torch
+from torch.autograd import grad
 import tqdm
 from sklearn.manifold import TSNE
 from torch.utils.data.dataloader import DataLoader
@@ -74,6 +75,7 @@ def main(args):
     logger.info('optim_mode: {}'.format(args.optim_mode))
     logger.info('length_weight: {}'.format(args.length_weight))
     logger.info('sample_weight: {}'.format(args.sample_weight))
+    logger.info('penalty_lambda: {}'.format(args.penalty_lambda))
 
     logger.info('Loading config...')
     bert_config = Config('config/bert.ini')
@@ -317,13 +319,21 @@ def main(args):
                 optimizer_D.zero_grad()
                 real_f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
                 discriminator_output = discriminator_output.squeeze()
+                # todo D real loss
                 # real_loss = adversarial_loss(discriminator_output, (y != 0.0).float())
-                real_loss = real_loss_func(discriminator_output, (y != 0.0).float())
+                # real_loss = real_loss_func(discriminator_output, (y != 0.0).float())
+
+                # todo negative for oos sample
+                neg = FloatTensor([-1] * batch)
+                neg_mask = torch.where(y==0, neg, y)
+                discriminator_output_ = discriminator_output * neg_mask
+
+                real_loss = -torch.mean(discriminator_output_)
                 if n_class > 2:  # 大于2表示除了训练判别器还要训练分类器
                     class_loss = classified_loss(classification_output, y.long())
                     real_loss += class_loss
                     D_class_loss += class_loss.detach()
-                real_loss.backward()
+                # real_loss.backward()
 
                 if args.do_vis:
                     all_features.append(real_f_vector.detach())
@@ -335,12 +345,29 @@ def main(args):
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 fake_discriminator_output = D.detect_only(fake_feature)
+                # todo D fake loss
                 # beta of fake
                 if 0 <= args.beta <= 1:
-                    fake_loss = args.beta * adversarial_loss(fake_discriminator_output, fake_label)
+                    # fake_loss = args.beta * adversarial_loss(fake_discriminator_output, fake_label)
+                    fake_loss = args.beta * torch.mean(fake_discriminator_output)
                 else:
-                    fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
-                fake_loss.backward()
+                    # fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
+                    fake_loss = torch.mean(fake_discriminator_output)
+                # fake_loss.backward()
+
+                # todo gradient penalty
+                alpha = torch.rand((batch, 1, 1, 1)).to(device)
+                x_hat = alpha * real_feature.data + (1 - alpha) * fake_feature.data
+                x_hat.requires_grad = True
+
+                pred_hat = D.detect_only(x_hat)
+                gradient = grad(outputs=pred_hat, inputs=x_hat, grad_outputs=torch.ones(pred_hat.size()).to(device),
+                                create_graph=True, retain_graph=True)
+                gradient_penalty = args.penalty_lambda * (
+                            (gradient[0].view(gradient[0].size()[0], -1).norm(p=2, dim=1) - 1) ** 2).mean()
+
+                d_loss = real_loss + fake_loss + gradient_penalty
+                d_loss.backward()
                 optimizer_D.step()
 
                 if args.fine_tune:
@@ -357,9 +384,11 @@ def main(args):
                 if args.do_vis:
                     G_features.append(fake_f_vector.detach())
 
-                gd_loss = adversarial_loss(D_decision, valid_label)
+                # todo G loss
+                # gd_loss = adversarial_loss(D_decision, valid_label)
                 fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
-                g_loss = gd_loss + 0 * fm_loss
+                # g_loss = gd_loss + 0 * fm_loss
+                g_loss = -torch.mean(D_decision)
                 g_loss.backward()
                 optimizer_G.step()
 
@@ -368,7 +397,7 @@ def main(args):
                 D_fake_loss += fake_loss.detach()
                 D_real_loss += real_loss.detach()
                 G_d_loss += g_loss.detach()
-                G_train_loss += g_loss.detach() + fm_loss.detach()
+                G_train_loss += g_loss.detach() # + fm_loss.detach()
                 FM_train_loss += fm_loss.detach()
 
             logger.info('[Epoch {}] Train: D_fake_loss: {}'.format(i, D_fake_loss / n_sample))
@@ -887,7 +916,7 @@ if __name__ == '__main__':
                         help='Do visualization.')
 
     parser.add_argument('--do_g_eval_vis', action='store_true',
-                        help='Do visualization of generator and eval data feature.')
+                        help='Do feature visualization of generator and eval data.')
 
     parser.add_argument('--output_dir', required=True,
                         help='The output directory saving model and logging file.')
@@ -919,6 +948,8 @@ if __name__ == '__main__':
                         help="Weight of short and long sample loss for Discriminator.")
     parser.add_argument('--sample_weight', type=float, default=0,
                         help="Weight of excluded sample loss for Discriminator.")
+
+    parser.add_argument('--penalty_lambda', type=float, default=10, help="Weight of gradient_penalty.")
 
     # data config
     parser.add_argument('--mode', type=int, default=-1)
