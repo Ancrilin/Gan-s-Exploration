@@ -76,6 +76,7 @@ def main(args):
     logger.info('length_weight: {}'.format(args.length_weight))
     logger.info('sample_weight: {}'.format(args.sample_weight))
     logger.info('penalty_lambda: {}'.format(args.penalty_lambda))
+    logger.info('n_D: {}'.format(args.n_D))
 
     logger.info('Loading config...')
     bert_config = Config('config/bert.ini')
@@ -198,6 +199,8 @@ def main(args):
             D_class_loss = 0
 
             G_features = []
+
+            iteration = 0
 
             for sample in tqdm.tqdm(train_dataloader):
                 sample = (i.to(device) for i in sample)
@@ -373,24 +376,28 @@ def main(args):
                 if args.fine_tune:
                     optimizer_E.step()
 
-                # train G
-                optimizer_G.zero_grad()
-                if args.model == 'lstm_gan' or args.model == 'cnn_gan':
-                    z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
-                else:
-                    z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
-                fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
+                # todo n iterations of D per G iteration
+                if iteration % args.n_D == 0:
+                    # train G
+                    optimizer_G.zero_grad()
+                    if args.model == 'lstm_gan' or args.model == 'cnn_gan':
+                        z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
+                    else:
+                        z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                    fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
 
-                if args.do_vis:
-                    G_features.append(fake_f_vector.detach())
+                    # todo G loss
+                    # gd_loss = adversarial_loss(D_decision, valid_label)
+                    fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
+                    # g_loss = gd_loss + 0 * fm_loss
+                    g_loss = -torch.mean(D_decision)
+                    g_loss.backward()
+                    optimizer_G.step()
 
-                # todo G loss
-                # gd_loss = adversarial_loss(D_decision, valid_label)
-                fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
-                # g_loss = gd_loss + 0 * fm_loss
-                g_loss = -torch.mean(D_decision)
-                g_loss.backward()
-                optimizer_G.step()
+                    if args.do_vis:
+                        G_features.append(fake_f_vector.detach())
+
+                iteration += 1
 
                 global_step += 1
 
@@ -949,7 +956,11 @@ if __name__ == '__main__':
     parser.add_argument('--sample_weight', type=float, default=0,
                         help="Weight of excluded sample loss for Discriminator.")
 
-    parser.add_argument('--penalty_lambda', type=float, default=10, help="Weight of gradient_penalty.")
+    parser.add_argument('--penalty_lambda', type=float, default=10,
+                        help="Coefficient of gradient_penalty.")
+
+    parser.add_argument('--n_D', default=5, type=int,
+                        help='Number of iterations of the critic per generator iteration.')
 
     # data config
     parser.add_argument('--mode', type=int, default=-1)
