@@ -1,8 +1,4 @@
 # coding: utf-8
-# @author: Ross
-# @file: run_gan.py
-# @time: 2020/01/14
-# @contact: devross@gmail.com
 import argparse
 import os
 import pickle
@@ -11,7 +7,6 @@ import numpy as np
 import pandas as pd
 import json
 import torch
-from torch.autograd import grad
 import tqdm
 from sklearn.manifold import TSNE
 from torch.utils.data.dataloader import DataLoader
@@ -22,13 +17,12 @@ from sklearn.metrics import roc_auc_score
 
 import metrics
 from config import Config
-from data_utils import OOSDataset, SMPDataset
+from data_utils import OOSDataset
 from logger import Logger
 from metrics import plot_confusion_matrix
-from processor.oos_processor_v3 import OOSProcessor
+from processor.oos_processor import OOSProcessor
 from processor.smp_processor import SMPProcessor
 from processor.smp_processor_v2 import SMPProcessor_v2
-from processor.smp_processor_v3 import SMPProcessor_v3
 from utils import check_manual_seed, save_gan_model, load_gan_model, save_model, load_model, output_cases, EarlyStopping
 from utils import convert_to_int_by_threshold
 from utils.visualization import scatter_plot, my_plot_roc, plot_train_test
@@ -67,16 +61,9 @@ def main(args):
     logger.info('model: {}'.format(args.model))
     check_manual_seed(SEED)
     check_args(args)
-    if 0 <= args.beta <= 1:
-        logger.info('beta: {}'.format(args.beta))
     logger.info('mode: {}'.format(args.mode))
     logger.info('maxlen: {}'.format(args.maxlen))
     logger.info('minlen: {}'.format(args.minlen))
-    logger.info('optim_mode: {}'.format(args.optim_mode))
-    logger.info('length_weight: {}'.format(args.length_weight))
-    logger.info('sample_weight: {}'.format(args.sample_weight))
-    logger.info('penalty_lambda: {}'.format(args.penalty_lambda))
-    logger.info('n_D: {}'.format(args.n_D))
 
     logger.info('Loading config...')
     bert_config = Config('config/bert.ini')
@@ -116,8 +103,8 @@ def main(args):
             processor = SMPProcessor(bert_config, maxlen=32)
             print('processor')
         else:
-            processor = SMPProcessor_v3(bert_config, maxlen=32)
-            print('processor_v3')
+            processor = SMPProcessor_v2(bert_config, maxlen=32)
+            print('processor_v2')
     else:
         raise ValueError('The dataset {} is not supported.'.format(args.dataset))
 
@@ -192,123 +179,19 @@ def main(args):
             E.train()
 
             G_train_loss = 0
-            G_d_loss = 0
             D_fake_loss = 0
             D_real_loss = 0
             FM_train_loss = 0
             D_class_loss = 0
 
-            G_features = []
-
-            iteration = 0
-
             for sample in tqdm.tqdm(train_dataloader):
                 sample = (i.to(device) for i in sample)
-                if args.dataset == 'smp':
-                    token, mask, type_ids, knowledge_tag, y = sample
-                    batch = len(token)
+                token, mask, type_ids, y = sample
+                batch = len(token)
 
-                    ood_sample = (y == 0.0).float()
-                    # weight = torch.ones(len(ood_sample)).to(device) - ood_sample * args.beta
-                    # real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
-
-                    # length weight
-                    length_sample = FloatTensor([0] * batch)
-                    if args.minlen != -1:
-                        short_sample = (mask[:, args.minlen] == 0).float()
-                        length_sample = length_sample.add(short_sample)
-                    if args.maxlen != -1:
-                        long_sample = mask[:, args.maxlen].float()
-                        length_sample = length_sample.add(long_sample)
-
-                    # get knowledge sample weight by knowledge_tag
-                    exclude_sample = knowledge_tag
-
-                    # initailize weight
-                    weight = torch.ones(batch).to(device)
-
-                    # optimize without weights
-                    if args.optim_mode == 0 and 0 <= args.beta <= 1:
-                        weight -= ood_sample * args.beta
-
-                    # only optimize length by weight
-                    if args.optim_mode == 1:
-                        # set all exclude_sample's weight to 0
-                        weight -= exclude_sample
-                        length_sample -= exclude_sample
-                        length_sample = (length_sample > 0).float()
-                        weight -= length_sample * (1 - args.length_weight)
-
-                        # set ood sample weight
-                        if 0 <= args.beta <= 1:
-                            ood_sample -= exclude_sample
-                            ood_sample = (ood_sample > 0).float()
-                            temp = torch.ones(batch).to(device)
-                            temp -= ood_sample * args.beta
-                            weight *= temp
-
-                    # only optimize sample by weight
-                    if args.optim_mode == 2:
-                        # set all length_sample's weight to 0
-                        weight -= length_sample
-
-                        exclude_sample -= length_sample
-                        exclude_sample = (exclude_sample > 0).float()
-                        weight -= exclude_sample * (1 - args.sample_weight)
-
-                        # set ood sample weight
-                        if 0 <= args.beta <= 1:
-                            ood_sample -= length_sample
-                            ood_sample = (ood_sample > 0).float()
-                            temp = torch.ones(batch)
-                            temp -= ood_sample * args.beta
-                            weight *= temp
-
-                    # optimize length and sample by weight
-                    # if args.optim_mode == 3:
-                    #     alpha = 0.5
-                    #     beta = 0.5
-                    #     weight = torch.ones(len(length_sample)).to(device) \
-                    #              - alpha * length_sample * (1 - args.length_weight) \
-                    #              - beta * exclude_sample * (1 - args.sample_weight)
-
-                if args.dataset == 'oos-eval':
-                    token, mask, type_ids, y = sample
-                    batch = len(token)
-
-                    ood_sample = (y == 0.0).float()
-                    # weight = torch.ones(len(ood_sample)).to(device) - ood_sample * args.beta
-                    # real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
-
-                    # length weight
-                    length_sample = FloatTensor([0] * batch)
-                    if args.minlen != -1:
-                        short_sample = (mask[:, args.minlen] == 0).float()
-                        length_sample = length_sample.add(short_sample)
-                    if args.maxlen != -1:
-                        long_sample = mask[:, args.maxlen].float()
-                        length_sample = length_sample.add(long_sample)
-
-                    # initailize weight
-                    weight = torch.ones(batch).to(device)
-
-                    # optimize without weights
-                    if args.optim_mode == 0 and 0 <= args.beta <= 1:
-                        weight -= ood_sample * args.beta
-
-                    # only optimize length by weight
-                    if args.optim_mode == 1:
-                        weight -= length_sample * (1 - args.length_weight)
-
-                        # set ood sample weight
-                        if 0 <= args.beta <= 1:
-                            ood_sample -= length_sample
-                            ood_sample = (ood_sample > 0).float()
-                            temp = torch.ones(batch).to(device)
-                            temp -= ood_sample * args.beta
-                            weight *= temp
-
-                real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
+                ood_sample = (y==0.0)
+                # weight = torch.ones(len(ood_sample)).to(device) - ood_sample * args.beta
+                # real_loss_func = torch.nn.BCELoss(weight=weight).to(device)
 
                 # the label used to train generator and discriminator.
                 valid_label = FloatTensor(batch, 1).fill_(1.0).detach()
@@ -322,21 +205,13 @@ def main(args):
                 optimizer_D.zero_grad()
                 real_f_vector, discriminator_output, classification_output = D(real_feature, return_feature=True)
                 discriminator_output = discriminator_output.squeeze()
-                # todo D real loss
-                # real_loss = adversarial_loss(discriminator_output, (y != 0.0).float())
+                real_loss = adversarial_loss(discriminator_output, (y != 0.0).float())
                 # real_loss = real_loss_func(discriminator_output, (y != 0.0).float())
-
-                # todo negative for oos sample
-                neg = FloatTensor([-1] * batch)
-                neg_mask = torch.where(y==0, neg, y)
-                discriminator_output_ = discriminator_output * neg_mask
-
-                real_loss = -torch.mean(discriminator_output_)
                 if n_class > 2:  # 大于2表示除了训练判别器还要训练分类器
                     class_loss = classified_loss(classification_output, y.long())
                     real_loss += class_loss
                     D_class_loss += class_loss.detach()
-                # real_loss.backward()
+                real_loss.backward()
 
                 if args.do_vis:
                     all_features.append(real_f_vector.detach())
@@ -348,72 +223,40 @@ def main(args):
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 fake_discriminator_output = D.detect_only(fake_feature)
-                # todo D fake loss
-                # beta of fake
-                if 0 <= args.beta <= 1:
-                    # fake_loss = args.beta * adversarial_loss(fake_discriminator_output, fake_label)
-                    fake_loss = args.beta * torch.mean(fake_discriminator_output)
-                else:
-                    # fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
-                    fake_loss = torch.mean(fake_discriminator_output)
-                # fake_loss.backward()
-
-                # todo gradient penalty
-                alpha = torch.rand((batch, 1, 1, 1)).to(device)
-                x_hat = alpha * real_feature.data + (1 - alpha) * fake_feature.data
-                x_hat.requires_grad = True
-
-                pred_hat = D.detect_only(x_hat)
-                gradient = grad(outputs=pred_hat, inputs=x_hat, grad_outputs=torch.ones(pred_hat.size()).to(device),
-                                create_graph=True, retain_graph=True)
-                gradient_penalty = args.penalty_lambda * (
-                            (gradient[0].view(gradient[0].size()[0], -1).norm(p=2, dim=1) - 1) ** 2).mean()
-
-                d_loss = real_loss + fake_loss + gradient_penalty
-                d_loss.backward()
+                # fake_loss = args.beta * adversarial_loss(fake_discriminator_output, fake_label)
+                fake_loss = adversarial_loss(fake_discriminator_output, fake_label)
+                fake_loss.backward()
                 optimizer_D.step()
 
                 if args.fine_tune:
                     optimizer_E.step()
 
-                # todo n iterations of D per G iteration
-                if iteration % args.n_D == 0:
-                    # train G
-                    optimizer_G.zero_grad()
-                    if args.model == 'lstm_gan' or args.model == 'cnn_gan':
-                        z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
-                    else:
-                        z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
-                    fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
-
-                    # todo G loss
-                    # gd_loss = adversarial_loss(D_decision, valid_label)
-                    fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
-                    # g_loss = gd_loss + 0 * fm_loss
-                    g_loss = -torch.mean(D_decision)
-                    g_loss.backward()
-                    optimizer_G.step()
-
-                    if args.do_vis:
-                        G_features.append(fake_f_vector.detach())
-
-                iteration += 1
+                # train G
+                optimizer_G.zero_grad()
+                if args.model == 'lstm_gan' or args.model == 'cnn_gan':
+                    z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
+                else:
+                    z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
+                gd_loss = adversarial_loss(D_decision, valid_label)
+                fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
+                g_loss = gd_loss + 0 * fm_loss
+                g_loss.backward()
+                optimizer_G.step()
 
                 global_step += 1
 
                 D_fake_loss += fake_loss.detach()
                 D_real_loss += real_loss.detach()
-                G_d_loss += g_loss.detach()
-                G_train_loss += g_loss.detach() # + fm_loss.detach()
+                G_train_loss += g_loss.detach() + fm_loss.detach()
                 FM_train_loss += fm_loss.detach()
 
-            logger.info('[Epoch {}] Train: D_fake_loss: {}'.format(i, D_fake_loss / n_sample))
-            logger.info('[Epoch {}] Train: D_real_loss: {}'.format(i, D_real_loss / n_sample))
+            # logger.info('[Epoch {}] Train: D_fake_loss: {}'.format(i, D_fake_loss / n_sample))
+            # logger.info('[Epoch {}] Train: D_real_loss: {}'.format(i, D_real_loss / n_sample))
             # logger.info('[Epoch {}] Train: D_class_loss: {}'.format(i, D_class_loss / n_sample))
-            logger.info('[Epoch {}] Train: G_train_loss: {}'.format(i, G_train_loss / n_sample))
-            logger.info('[Epoch {}] Train: G_d_loss: {}'.format(i, G_d_loss / n_sample))
-            logger.info('[Epoch {}] Train: FM_train_loss: {}'.format(i, FM_train_loss / n_sample))
-            logger.info('---------------------------------------------------------------------------')
+            # logger.info('[Epoch {}] Train: G_train_loss: {}'.format(i, G_train_loss / n_sample))
+            # logger.info('[Epoch {}] Train: FM_train_loss: {}'.format(i, FM_train_loss / n_sample))
+            # logger.info('---------------------------------------------------------------------------')
 
             D_total_fake_loss.append(D_fake_loss / n_sample)
             D_total_real_loss.append(D_real_loss / n_sample)
@@ -424,18 +267,6 @@ def main(args):
             if dev_dataset:
                 # logger.info('#################### eval result at step {} ####################'.format(global_step))
                 eval_result = eval(dev_dataset)
-
-                if args.do_vis and args.do_g_eval_vis:
-                    G_features = torch.cat(G_features, 0).cpu().numpy()
-
-                    features = np.concatenate([eval_result['all_features'], G_features], axis=0)
-                    features = TSNE(n_components=2, verbose=1, n_jobs=-1).fit_transform(features)
-                    labels = np.concatenate([eval_result['all_binary_y'], np.array([-1] * len(G_features))], 0).reshape(
-                        -1, 1)
-
-                    data = np.concatenate([features, labels], 1)
-                    fig = scatter_plot(data, processor)
-                    fig.savefig(os.path.join(args.output_dir, 'plot_epoch_' + str(i) + '.png'))
 
                 valid_detection_loss.append(eval_result['detection_loss'])
                 valid_oos_ind_precision.append(eval_result['oos_ind_precision'])
@@ -456,13 +287,13 @@ def main(args):
                         save_model(E, path=config['bert_save_path'], model_name='bert')
 
                 # logger.info(eval_result)
-                # logger.info('valid_eer: {}'.format(eval_result['eer']))
-                # logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
-                # logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
-                # logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
-                # logger.info('valid_auc: {}'.format(eval_result['auc']))
-                # logger.info(
-                #     'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
+                logger.info('valid_eer: {}'.format(eval_result['eer']))
+                logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
+                logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
+                logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+                logger.info('valid_auc: {}'.format(eval_result['auc']))
+                logger.info(
+                    'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
         if args.patience >= args.n_epoch:
             save_gan_model(D, G, config['gan_save_path'])
@@ -501,14 +332,10 @@ def main(args):
 
         all_detection_preds = []
         all_class_preds = []
-        all_features = []
 
         for sample in tqdm.tqdm(dev_dataloader):
             sample = (i.to(device) for i in sample)
-            if args.dataset == 'smp':
-                token, mask, type_ids, knowledge_tag, y = sample
-            if args.dataset == 'oos-eval':
-                token, mask, type_ids, y = sample
+            token, mask, type_ids, y = sample
             batch = len(token)
 
             # -------------------------evaluate D------------------------- #
@@ -528,8 +355,6 @@ def main(args):
                 else:
                     f_vector, discriminator_output = D.detect_only(real_feature, return_feature=True)
                     all_detection_preds.append(discriminator_output)
-                if args.do_vis:
-                    all_features.append(f_vector)
 
         all_y = LongTensor(dataset.dataset[:, -1].astype(int)).cpu()  # [length, n_class]
         all_binary_y = (all_y != 0).long()  # [length, 1] label 0 is oos
@@ -552,8 +377,7 @@ def main(args):
         # logger.info(metrics.classification_report(all_binary_y, all_detection_binary_preds, target_names=['oos', 'in']))
 
         # report
-        oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(all_detection_binary_preds,
-                                                                                            all_binary_y)
+        oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(all_detection_binary_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
         y_score = all_detection_preds.squeeze().tolist()
@@ -571,9 +395,6 @@ def main(args):
         if n_class > 2:
             result['class_loss'] = class_loss
             result['class_acc'] = class_acc
-        if args.do_vis:
-            all_features = torch.cat(all_features, 0).cpu().numpy()
-            result['all_features'] = all_features
 
         freeze_data['valid_all_y'] = all_y
         freeze_data['vaild_all_pred'] = all_detection_binary_preds
@@ -605,10 +426,7 @@ def main(args):
 
         for sample in tqdm.tqdm(test_dataloader):
             sample = (i.to(device) for i in sample)
-            if args.dataset == 'smp':
-                token, mask, type_ids, knowledge_tag, y = sample
-            if args.dataset == 'oos-eval':
-                token, mask, type_ids, y = sample
+            token, mask, type_ids, y = sample
             batch = len(token)
 
             # -------------------------evaluate D------------------------- #
@@ -650,8 +468,7 @@ def main(args):
         # logger.info(metrics.classification_report(all_binary_y, all_detection_binary_preds, target_names=['oos', 'in']))
 
         # report
-        oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(all_detection_binary_preds,
-                                                                                            all_binary_y)
+        oos_ind_precision, oos_ind_recall, oos_ind_fscore, _ = metrics.binary_recall_fscore(all_detection_binary_preds, all_binary_y)
         detection_acc = metrics.accuracy(all_detection_binary_preds, all_binary_y)
 
         y_score = all_detection_preds.squeeze().tolist()
@@ -704,16 +521,12 @@ def main(args):
 
     if args.do_train:
         if config['data_file'].startswith('binary'):
-            if args.optim_mode == 0:
-                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlene,
-                                                        pre_exclude=True)
+            if args.mode != -1:
+                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlen)
+                text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen)
             else:
-                # optimize length or sample by weight
-                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlen,
-                                                        pre_exclude=False)
-
-            text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen,
-                                                  pre_exclude=True)
+                text_train_set = processor.read_dataset(data_path, ['train'])
+                text_dev_set = processor.read_dataset(data_path, ['val'])
 
         elif config['dataset'] == 'oos-eval':
             text_train_set = processor.read_dataset(data_path, ['train', 'oos_train'])
@@ -724,39 +537,30 @@ def main(args):
 
         if args.ood:
             text_train_set = [sample for sample in text_train_set if sample['domain'] != 'chat']
-
         train_features = processor.convert_to_ids(text_train_set)
+        train_dataset = OOSDataset(train_features)
         dev_features = processor.convert_to_ids(text_dev_set)
-
-        if config['dataset'] == 'oos-eval':
-            train_dataset = OOSDataset(train_features)
-            dev_dataset = OOSDataset(dev_features)
-        if config['dataset'] == 'smp':
-            train_dataset = SMPDataset(train_features)
-            dev_dataset = SMPDataset(dev_features)
+        dev_dataset = OOSDataset(dev_features)
 
         train_result = train(train_dataset, dev_dataset)
         # save_feature(train_result['all_features'], os.path.join(args.output_dir, 'train_feature'))
 
+
     if args.do_eval:
         logger.info('#################### eval result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
-            #  don't optim dev_set by weight, so pre_exclude it
-            text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen,
-                                                  pre_exclude=True)
-
+            if args.mode != -1:
+                text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen)
+            else:
+                text_dev_set = processor.read_dataset(data_path, ['val'])
         elif config['dataset'] == 'oos-eval':
             text_dev_set = processor.read_dataset(data_path, ['val', 'oos_val'])
         elif config['dataset'] == 'smp':
             text_dev_set = processor.read_dataset(data_path, ['val'])
 
+
         dev_features = processor.convert_to_ids(text_dev_set)
-
-        if config['dataset'] == 'oos-eval':
-            dev_dataset = OOSDataset(dev_features)
-        if config['dataset'] == 'smp':
-            dev_dataset = SMPDataset(dev_features)
-
+        dev_dataset = OOSDataset(dev_features)
         eval_result = eval(dev_dataset)
         # logger.info(eval_result)
         logger.info('eval_eer: {}'.format(eval_result['eer']))
@@ -776,20 +580,20 @@ def main(args):
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
-            # always keep test_set unchanged
-            text_test_set = processor.read_dataset(data_path, ['test'])
+            if args.mode != -1:
+                text_test_set, text_test_len = processor.read_dataset(data_path, ['test'], 0, -1, -1)
+                print('--------------')
+                print('text_test_len', text_test_len)
+            else:
+                print('==============')
+                text_test_set = processor.read_dataset(data_path, ['test'])
         elif config['dataset'] == 'oos-eval':
             text_test_set = processor.read_dataset(data_path, ['test', 'oos_test'])
         elif config['dataset'] == 'smp':
             text_test_set = processor.read_dataset(data_path, ['test'])
 
         test_features = processor.convert_to_ids(text_test_set)
-
-        if config['dataset'] == 'oos-eval':
-            test_dataset = OOSDataset(test_features)
-        if config['dataset'] == 'smp':
-            test_dataset = SMPDataset(test_features)
-
+        test_dataset = OOSDataset(test_features)
         test_result = test(test_dataset)
         # logger.info(test_result)
         logger.info('test_eer: {}'.format(test_result['eer']))
@@ -841,11 +645,9 @@ def main(args):
             features = TSNE(n_components=2, verbose=1, n_jobs=-1).fit_transform(features)  # [2 * length, 2]
             # [2 * length, １]
             if n_class > 2:
-                labels = np.concatenate([test_result['all_y'], np.array([-1] * (len(test_dataset) // 2))], 0).reshape(
-                    (-1, 1))
+                labels = np.concatenate([test_result['all_y'], np.array([-1] * (len(test_dataset) // 2))], 0).reshape((-1, 1))
             else:
-                labels = np.concatenate([test_result['all_binary_y'], np.array([-1] * (len(test_dataset) // 2))],
-                                        0).reshape((-1, 1))
+                labels = np.concatenate([test_result['all_binary_y'], np.array([-1] * (len(test_dataset) // 2))], 0).reshape((-1, 1))
             # [2 * length, 3]
             data = np.concatenate([features, labels], 1)
             fig = scatter_plot(data, processor)
@@ -895,7 +697,7 @@ if __name__ == '__main__':
 
     # ------------------------bert------------------------ #
     parser.add_argument('--bert_type',
-                        choices={'bert-base-uncased', 'bert-large-uncased', 'bert-base-chinese', }, required=True,
+                        choices={'bert-base-uncased', 'bert-large-uncased', 'bert-base-chinese',}, required=True,
                         help='Type of the pre-trained BERT to be used.')
 
     # ------------------------Discriminator------------------------ #
@@ -922,9 +724,6 @@ if __name__ == '__main__':
     parser.add_argument('--do_vis', action='store_true',
                         help='Do visualization.')
 
-    parser.add_argument('--do_g_eval_vis', action='store_true',
-                        help='Do feature visualization of generator and eval data.')
-
     parser.add_argument('--output_dir', required=True,
                         help='The output directory saving model and logging file.')
 
@@ -942,7 +741,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--D_lr', type=float, default=1e-5, help="Learning rate for Discriminator.")
     parser.add_argument('--G_lr', type=float, default=1e-5, help="Learning rate for Generator.")
-    parser.add_argument('--beta', type=float, default=-1, help="Weight of fake sample loss for Discriminator.")
+    parser.add_argument('--beta', type=float, default=0.1, help="Weight of fake sample loss for Discriminator.")
 
     parser.add_argument('--bert_lr', type=float, default=2e-4, help="Learning rate for Generator.")
     parser.add_argument('--fine_tune', action='store_true',
@@ -951,16 +750,6 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, required=True,
                         choices={'gan', 'dgan', 'lstm_gan', 'cnn_gan'},
                         help='choose gan model')
-    parser.add_argument('--length_weight', type=float, default=0,
-                        help="Weight of short and long sample loss for Discriminator.")
-    parser.add_argument('--sample_weight', type=float, default=0,
-                        help="Weight of excluded sample loss for Discriminator.")
-
-    parser.add_argument('--penalty_lambda', type=float, default=10,
-                        help="Coefficient of gradient_penalty.")
-
-    parser.add_argument('--n_D', default=5, type=int,
-                        help='Number of iterations of the critic per generator iteration.')
 
     # data config
     parser.add_argument('--mode', type=int, default=-1)
@@ -968,11 +757,6 @@ if __name__ == '__main__':
     parser.add_argument('--minlen', type=int, default=-1)
     parser.add_argument('--result', type=str, default="no")
     parser.add_argument('--ood', action='store_true', default=False)
-    parser.add_argument('--optim_mode', type=int, default=0,
-                        help="0: optimize both, and optimize without weight; "
-                             "1: optimize both, and only optimize length by weight; "
-                             "2: optimize both, and only optimize sample by weight;"
-                             "3: optimize both, and optimize both by weight")
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)

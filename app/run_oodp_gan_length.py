@@ -24,7 +24,7 @@ from config import Config
 from data_utils import OOSDataset, SMPDataset
 from logger import Logger
 from metrics import plot_confusion_matrix
-from processor.oos_processor import OOSProcessor
+from processor.oos_processor_v3 import OOSProcessor
 from processor.smp_processor import SMPProcessor
 from processor.smp_processor_v2 import SMPProcessor_v2
 from processor.smp_processor_v3 import SMPProcessor_v3
@@ -371,13 +371,13 @@ def main(args):
                 G_train_loss += g_loss.detach() + fm_loss.detach()
                 FM_train_loss += fm_loss.detach()
 
-            logger.info('[Epoch {}] Train: D_fake_loss: {}'.format(i, D_fake_loss / n_sample))
-            logger.info('[Epoch {}] Train: D_real_loss: {}'.format(i, D_real_loss / n_sample))
+            # logger.info('[Epoch {}] Train: D_fake_loss: {}'.format(i, D_fake_loss / n_sample))
+            # logger.info('[Epoch {}] Train: D_real_loss: {}'.format(i, D_real_loss / n_sample))
             # logger.info('[Epoch {}] Train: D_class_loss: {}'.format(i, D_class_loss / n_sample))
-            logger.info('[Epoch {}] Train: G_train_loss: {}'.format(i, G_train_loss / n_sample))
-            logger.info('[Epoch {}] Train: G_d_loss: {}'.format(i, G_d_loss / n_sample))
-            logger.info('[Epoch {}] Train: FM_train_loss: {}'.format(i, FM_train_loss / n_sample))
-            logger.info('---------------------------------------------------------------------------')
+            # logger.info('[Epoch {}] Train: G_train_loss: {}'.format(i, G_train_loss / n_sample))
+            # logger.info('[Epoch {}] Train: G_d_loss: {}'.format(i, G_d_loss / n_sample))
+            # logger.info('[Epoch {}] Train: FM_train_loss: {}'.format(i, FM_train_loss / n_sample))
+            # logger.info('---------------------------------------------------------------------------')
 
             D_total_fake_loss.append(D_fake_loss / n_sample)
             D_total_real_loss.append(D_real_loss / n_sample)
@@ -386,7 +386,7 @@ def main(args):
             FM_total_train_loss.append(FM_train_loss / n_sample)
 
             if dev_dataset:
-                # logger.info('#################### eval result at step {} ####################'.format(global_step))
+                logger.info('#################### eval result at step {} ####################'.format(global_step))
                 eval_result = eval(dev_dataset)
 
                 if args.do_vis and args.do_g_eval_vis:
@@ -420,13 +420,13 @@ def main(args):
                         save_model(E, path=config['bert_save_path'], model_name='bert')
 
                 # logger.info(eval_result)
-                # logger.info('valid_eer: {}'.format(eval_result['eer']))
-                # logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
-                # logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
-                # logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
-                # logger.info('valid_auc: {}'.format(eval_result['auc']))
-                # logger.info(
-                #     'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
+                logger.info('valid_eer: {}'.format(eval_result['eer']))
+                logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
+                logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
+                logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+                logger.info('valid_auc: {}'.format(eval_result['auc']))
+                logger.info(
+                    'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
         if args.patience >= args.n_epoch:
             save_gan_model(D, G, config['gan_save_path'])
@@ -921,13 +921,13 @@ if __name__ == '__main__':
                         help="Weight of excluded sample loss for Discriminator.")
 
     # data config
-    parser.add_argument('--mode', type=int, default=-1)
+    parser.add_argument('--mode', type=int, default=-1, help="Controll the filtering way of knowledge sample")
     parser.add_argument('--maxlen', type=int, default=-1)
     parser.add_argument('--minlen', type=int, default=-1)
     parser.add_argument('--result', type=str, default="no")
     parser.add_argument('--ood', action='store_true', default=False)
     parser.add_argument('--optim_mode', type=int, default=0,
-                        help="0: optimize both, and optimize without weight; "
+                        help="0: optimize both, and optimize without weight(pre-excluding samples); "
                              "1: optimize both, and only optimize length by weight; "
                              "2: optimize both, and only optimize sample by weight;"
                              "3: optimize both, and optimize both by weight")

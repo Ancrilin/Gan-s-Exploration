@@ -1,6 +1,6 @@
 # coding: utf-8
 # @author: Ross
-# @file: oos_processor.py 
+# @file: oos_processor_v3.py
 # @time: 2020/01/13
 # @contact: devross@gmail.com
 """oos-eval數據集预处理"""
@@ -28,7 +28,7 @@ class OOSProcessor(BertProcessor):
             ids_data.append(self.parse_line(line))
         return ids_data
 
-    def read_dataset(self, path: str, data_types: list, mode=0, maxlen=-1, minlen=-1):
+    def read_dataset(self, path: str, data_types: list, mode=0, maxlen=-1, minlen=-1, pre_exclude=False):
         """
         读取数据集文件
         :param path: 路径
@@ -41,10 +41,11 @@ class OOSProcessor(BertProcessor):
             data = json.load(f)
         for data_type in data_types:
             for line in data[data_type]:
-                if maxlen != -1 and len(line[0]) > maxlen:
-                    continue
-                if minlen != -1 and len(line[0]) <= minlen:
-                    continue
+                if pre_exclude:
+                    if maxlen != -1 and len(line[0]) > maxlen:
+                        continue
+                    if minlen != -1 and len(line[0]) <= minlen:
+                        continue
                 dataset.append(line)
         return dataset
 
