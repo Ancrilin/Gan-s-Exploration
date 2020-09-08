@@ -1,7 +1,7 @@
 #! /bin/bash
 
 lengths="19 20 21 22 23 24 25"
-# dataset_file="binary_true_smp_full_v2"
+# dataset_file="binary_undersample","binary_wiki_aug"
 # $1 dataset_file
 # $2 mode
 # $3 minlen
