@@ -1,8 +1,4 @@
 # coding: utf-8
-# @author: Ross
-# @file: run_gan.py
-# @time: 2020/01/14
-# @contact: devross@gmail.com
 import argparse
 import os
 import pickle
@@ -162,6 +158,7 @@ def main(args):
         # Loss function
         adversarial_loss = torch.nn.BCELoss().to(device)
         classified_loss = torch.nn.CrossEntropyLoss().to(device)
+        feature_matching_loss = torch.nn.MSELoss().to(device)
 
         # Optimizers
         optimizer_G = torch.optim.Adam(G.parameters(), lr=args.G_lr)  # optimizer for generator
@@ -332,7 +329,9 @@ def main(args):
                 if args.model == 'lstm_gan' or args.model == 'cnn_gan':
                     z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
                 else:
-                    z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                    # uniform (-1,1)
+                    # z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                    z = FloatTensor(np.random.uniform(-1, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 fake_discriminator_output = D.detect_only(fake_feature)
                 # beta of fake
@@ -351,15 +350,19 @@ def main(args):
                 if args.model == 'lstm_gan' or args.model == 'cnn_gan':
                     z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
                 else:
-                    z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                    # uniform (-1,1)
+                    # z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
+                    z = FloatTensor(np.random.uniform(-1, 1, (batch, args.G_z_dim))).to(device)
                 fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
 
                 if args.do_vis:
                     G_features.append(fake_f_vector.detach())
 
                 gd_loss = adversarial_loss(D_decision, valid_label)
+                # todo add feature matching loss
                 fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
-                g_loss = gd_loss + 0 * fm_loss
+                # fm_loss = feature_matching_loss(torch.mean(fake_f_vector, 0), torch.mean(real_f_vector.detach(), 0))
+                g_loss = gd_loss + fm_loss
                 g_loss.backward()
                 optimizer_G.step()
 
@@ -386,7 +389,7 @@ def main(args):
             FM_total_train_loss.append(FM_train_loss / n_sample)
 
             if dev_dataset:
-                logger.info('#################### eval result at step {} ####################'.format(global_step))
+                # logger.info('#################### eval result at step {} ####################'.format(global_step))
                 eval_result = eval(dev_dataset)
 
                 if args.do_vis and args.do_g_eval_vis:
@@ -420,13 +423,13 @@ def main(args):
                         save_model(E, path=config['bert_save_path'], model_name='bert')
 
                 # logger.info(eval_result)
-                logger.info('valid_eer: {}'.format(eval_result['eer']))
-                logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
-                logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
-                logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
-                logger.info('valid_auc: {}'.format(eval_result['auc']))
-                logger.info(
-                    'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
+                # logger.info('valid_eer: {}'.format(eval_result['eer']))
+                # logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
+                # logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
+                # logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+                # logger.info('valid_auc: {}'.format(eval_result['auc']))
+                # logger.info(
+                #     'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
         if args.patience >= args.n_epoch:
             save_gan_model(D, G, config['gan_save_path'])
@@ -669,7 +672,7 @@ def main(args):
     if args.do_train:
         if config['data_file'].startswith('binary'):
             if args.optim_mode == 0:
-                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlene,
+                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlen,
                                                         pre_exclude=True)
             else:
                 # optimize length or sample by weight

@@ -386,7 +386,7 @@ def main(args):
             FM_total_train_loss.append(FM_train_loss / n_sample)
 
             if dev_dataset:
-                logger.info('#################### eval result at step {} ####################'.format(global_step))
+                # logger.info('#################### eval result at step {} ####################'.format(global_step))
                 eval_result = eval(dev_dataset)
 
                 if args.do_vis and args.do_g_eval_vis:
@@ -420,13 +420,13 @@ def main(args):
                         save_model(E, path=config['bert_save_path'], model_name='bert')
 
                 # logger.info(eval_result)
-                logger.info('valid_eer: {}'.format(eval_result['eer']))
-                logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
-                logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
-                logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
-                logger.info('valid_auc: {}'.format(eval_result['auc']))
-                logger.info(
-                    'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
+                # logger.info('valid_eer: {}'.format(eval_result['eer']))
+                # logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
+                # logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
+                # logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+                # logger.info('valid_auc: {}'.format(eval_result['auc']))
+                # logger.info(
+                #     'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
         if args.patience >= args.n_epoch:
             save_gan_model(D, G, config['gan_save_path'])
@@ -669,7 +669,7 @@ def main(args):
     if args.do_train:
         if config['data_file'].startswith('binary'):
             if args.optim_mode == 0:
-                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlene,
+                text_train_set = processor.read_dataset(data_path, ['train'], args.mode, args.maxlen, args.minlen,
                                                         pre_exclude=True)
             else:
                 # optimize length or sample by weight
