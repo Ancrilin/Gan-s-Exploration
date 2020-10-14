@@ -332,6 +332,8 @@ def main(args):
                 if args.model == 'lstm_gan' or args.model == 'cnn_gan':
                     z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
                 else:
+                    # uniform (-1,1)
+                    # z = FloatTensor(np.random.uniform(-1, 1, (batch, args.G_z_dim))).to(device)
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_feature = G(z).detach()
                 fake_discriminator_output = D.detect_only(fake_feature)
@@ -351,6 +353,8 @@ def main(args):
                 if args.model == 'lstm_gan' or args.model == 'cnn_gan':
                     z = FloatTensor(np.random.normal(0, 1, (batch, 32, args.G_z_dim))).to(device)
                 else:
+                    # uniform (-1,1)
+                    # z = FloatTensor(np.random.uniform(-1, 1, (batch, args.G_z_dim))).to(device)
                     z = FloatTensor(np.random.normal(0, 1, (batch, args.G_z_dim))).to(device)
                 fake_f_vector, D_decision = D.detect_only(G(z), return_feature=True)
 
@@ -358,7 +362,9 @@ def main(args):
                     G_features.append(fake_f_vector.detach())
 
                 gd_loss = adversarial_loss(D_decision, valid_label)
+                # feature matching loss
                 fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
+                # fm_loss = feature_matching_loss(torch.mean(fake_f_vector, 0), torch.mean(real_f_vector.detach(), 0))
                 g_loss = gd_loss + 0 * fm_loss
                 g_loss.backward()
                 optimizer_G.step()
@@ -687,6 +693,7 @@ def main(args):
             text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'])
 
         if args.ood:
+            # todo excluding ood sample for oos-eval
             text_train_set = [sample for sample in text_train_set if sample['domain'] != 'chat']
 
         train_features = processor.convert_to_ids(text_train_set)
@@ -707,7 +714,7 @@ def main(args):
         if config['data_file'].startswith('binary'):
             #  don't optim dev_set by weight, so pre_exclude it
             text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen,
-                                                  pre_exclude=True)
+                                                  pre_exclude=False)
 
         elif config['dataset'] == 'oos-eval':
             text_dev_set = processor.read_dataset(data_path, ['val', 'oos_val'])

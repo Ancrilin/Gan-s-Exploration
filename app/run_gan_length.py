@@ -359,10 +359,11 @@ def main(args):
                     G_features.append(fake_f_vector.detach())
 
                 gd_loss = adversarial_loss(D_decision, valid_label)
-                # todo add feature matching loss
+                # feature matching loss
                 fm_loss = torch.abs(torch.mean(real_f_vector.detach(), 0) - torch.mean(fake_f_vector, 0)).mean()
                 # fm_loss = feature_matching_loss(torch.mean(fake_f_vector, 0), torch.mean(real_f_vector.detach(), 0))
                 g_loss = gd_loss + fm_loss
+
                 g_loss.backward()
                 optimizer_G.step()
 

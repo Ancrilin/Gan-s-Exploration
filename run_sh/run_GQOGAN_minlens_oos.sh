@@ -1,6 +1,6 @@
 #! /bin/bash
 
-lengths="-1 2 3 4 5 6"
+lengths="-1"
 # dataset_file="binary_undersample"
 # $1 dataset_file
 # $2 maxlen
