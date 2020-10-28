@@ -538,6 +538,7 @@ def main(args):
         result['oos_ind_f_score'] = oos_ind_fscore
         result['y_score'] = y_score
         result['auc'] = roc_auc_score(all_binary_y, y_score)
+        result['fpr95'] = ErrorRateAt95Recall(all_binary_y, y_score)
         if n_class > 2:
             result['class_loss'] = class_loss
             result['class_acc'] = class_acc
@@ -638,6 +639,7 @@ def main(args):
         result['score'] = y_score
         result['y_score'] = y_score
         result['auc'] = roc_auc_score(all_binary_y, y_score)
+        result['fpr95'] = ErrorRateAt95Recall(all_binary_y, y_score)
         if n_class > 2:
             result['class_loss'] = class_loss
             result['class_acc'] = class_acc
@@ -744,6 +746,8 @@ def main(args):
         gross_result['eval_fpr95'] = ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])
         gross_result['eval_auc'] = eval_result['auc']
 
+        freeze_data['eval_result'] = eval_result
+
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
@@ -779,6 +783,8 @@ def main(args):
         gross_result['test_eer'] = test_result['eer']
         gross_result['test_fpr95'] = ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])
         gross_result['test_auc'] = test_result['auc']
+
+        freeze_data['test_result'] = test_result
 
         # 输出错误cases
         if config['dataset'] == 'oos-eval':
