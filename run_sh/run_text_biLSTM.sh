@@ -20,6 +20,6 @@ for seed in ${seeds} ; do
     --do_test \
     --seed=$seed \
     --result=$2
-  rm -rf output/text-biLSTM_$seed/save
+  rm -rf output/text-biLSTM_s$seed/save
 done
 exit 0

@@ -8,6 +8,7 @@ for seed in ${seeds} ; do
     --patience=5 \
     --bert_type=bert-base-chinese \
     --fine_tune \
+    --lr=2e-5 \
     --dataset=smp \
     --data_file=$1 \
     --output_dir=output/bert_s$seed \
@@ -15,7 +16,8 @@ for seed in ${seeds} ; do
     --do_eval \
     --do_test \
     --seed=$seed \
+    --result=$2
   
-  rm -rf output/bert_$seed/save
+  rm -rf output/bert_s$seed/save
 done
 exit 0

@@ -695,7 +695,6 @@ def main(args):
             text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'])
 
         if args.ood:
-            # todo excluding ood sample for oos-eval
             text_train_set = [sample for sample in text_train_set if sample['domain'] != 'chat']
 
         train_features = processor.convert_to_ids(text_train_set)
@@ -714,7 +713,7 @@ def main(args):
     if args.do_eval:
         logger.info('#################### eval result at step {} ####################'.format(global_step))
         if config['data_file'].startswith('binary'):
-            #  don't optim dev_set by weight, so pre_exclude it
+            #  don't optim dev_set by weight, don't pre_exclude it
             text_dev_set = processor.read_dataset(data_path, ['val'], args.mode, args.maxlen, args.minlen,
                                                   pre_exclude=False)
 

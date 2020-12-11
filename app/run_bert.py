@@ -23,10 +23,12 @@ from model.bert import BertClassifier
 from processor.oos_processor import OOSProcessor
 from processor.smp_processor import SMPProcessor
 from utils import check_manual_seed, save_model, load_model, output_cases, EarlyStopping
-from utils.tool import ErrorRateAt95Recall, save_result
+from utils.visualization import scatter_plot, my_plot_roc
+from utils.tool import ErrorRateAt95Recall, save_result, save_feature, std_mean
 
 freeze_data = dict()
 SEED = 123
+gross_result = {}
 
 if torch.cuda.is_available():
     device = 'cuda:0'
@@ -48,6 +50,7 @@ def check_args(args):
 
 def main(args):
     logger.info('Checking...')
+    gross_result['seed'] = args.seed
     check_manual_seed(args.seed)
     check_args(args)
 
@@ -153,7 +156,7 @@ def main(args):
                 elif signal == 1:
                     save_model(model, path=config['model_save_path'], model_name='bert')
 
-                logger.info(eval_result)
+                # logger.info(eval_result)
                 logger.info('valid_eer: {}'.format(eval_result['eer']))
                 logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
                 logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
@@ -315,7 +318,7 @@ def main(args):
         dev_features = processor.convert_to_ids(text_dev_set)
         dev_dataset = OOSDataset(dev_features)
         eval_result = eval(dev_dataset)
-        logger.info(eval_result)
+        # logger.info(eval_result)
         logger.info('eval_eer: {}'.format(eval_result['eer']))
         logger.info('eval_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
         logger.info('eval_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
@@ -323,6 +326,13 @@ def main(args):
         logger.info('eval_auc: {}'.format(eval_result['auc']))
         logger.info(
             'eval_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
+
+        gross_result['eval_oos_ind_precision'] = eval_result['oos_ind_precision']
+        gross_result['eval_oos_ind_recall'] = eval_result['oos_ind_recall']
+        gross_result['eval_oos_ind_f_score'] = eval_result['oos_ind_f_score']
+        gross_result['eval_eer'] = eval_result['eer']
+        gross_result['eval_fpr95'] = ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])
+        gross_result['eval_auc'] = eval_result['auc']
 
     if args.do_test:
         logger.info('#################### test result at step {} ####################'.format(global_step))
@@ -337,13 +347,23 @@ def main(args):
         test_dataset = OOSDataset(test_features)
         test_result = test(test_dataset)
         save_result(test_result, os.path.join(args.output_dir, 'test_result'))
-        logger.info(test_result)
+        # logger.info(test_result)
         logger.info('test_eer: {}'.format(test_result['eer']))
         logger.info('test_ood_ind_precision: {}'.format(test_result['oos_ind_precision']))
         logger.info('test_ood_ind_recall: {}'.format(test_result['oos_ind_recall']))
         logger.info('test_ood_ind_f_score: {}'.format(test_result['oos_ind_f_score']))
         logger.info('test_auc: {}'.format(test_result['auc']))
         logger.info('test_fpr95: {}'.format(ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])))
+
+        my_plot_roc(test_result['all_binary_y'], test_result['y_score'],
+                    os.path.join(args.output_dir, 'roc_curve.png'))
+        save_result(test_result, os.path.join(args.output_dir, 'test_result'))
+        gross_result['test_oos_ind_precision'] = test_result['oos_ind_precision']
+        gross_result['test_oos_ind_recall'] = test_result['oos_ind_recall']
+        gross_result['test_oos_ind_f_score'] = test_result['oos_ind_f_score']
+        gross_result['test_eer'] = test_result['eer']
+        gross_result['test_fpr95'] = ErrorRateAt95Recall(test_result['all_binary_y'], test_result['y_score'])
+        gross_result['test_auc'] = test_result['auc']
 
         # 输出错误cases
         if config['dataset'] == 'oos-eval':
@@ -372,6 +392,16 @@ def main(args):
                             'test_score': freeze_data['test_score']
                             })
     df.to_csv(os.path.join(config['output_dir'], 'test_score.csv'))
+
+    if args.result != 'no':
+        pd_result = pd.DataFrame(gross_result)
+        if args.seed == 16:
+            pd_result.to_csv(args.result + '_gross_result.csv', index=False)
+        else:
+            pd_result.to_csv(args.result + '_gross_result.csv', index=False, mode='a', header=False)
+        if args.seed == 8192:
+            print(args.result)
+            std_mean(args.result + '_gross_result.csv')
 
 
 if __name__ == '__main__':
@@ -426,6 +456,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--fine_tune', action='store_true',
                         help='Whether to fine tune BERT during training.')
+
+    parser.add_argument('--result', type=str, default="no")
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
