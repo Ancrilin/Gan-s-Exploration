@@ -202,7 +202,7 @@ def main(args):
                 fake_label = FloatTensor(batch, 1).fill_(0.0).detach()
 
                 optimizer_E.zero_grad()
-                sequence_output, pooled_output = E(token, mask, type_ids)
+                sequence_output, pooled_output = E(token, mask, type_ids, return_dict=False)
                 real_feature = pooled_output
 
                 # train D on real
@@ -346,7 +346,7 @@ def main(args):
             # BERT encode sentence to feature vector
 
             with torch.no_grad():
-                sequence_output, pooled_output = E(token, mask, type_ids)
+                sequence_output, pooled_output = E(token, mask, type_ids, return_dict=False)
                 real_feature = pooled_output
 
                 # 大于2表示除了训练判别器还要训练分类器
@@ -437,7 +437,7 @@ def main(args):
             # BERT encode sentence to feature vector
 
             with torch.no_grad():
-                sequence_output, pooled_output = E(token, mask, type_ids)
+                sequence_output, pooled_output = E(token, mask, type_ids, return_dict=False)
                 real_feature = pooled_output
 
                 # 大于2表示除了训练判别器还要训练分类器
