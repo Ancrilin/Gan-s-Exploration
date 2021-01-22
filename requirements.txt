@@ -3,5 +3,5 @@ tqdm
 pandas
 transformers
 scikit_learn==0.22.2
-torch==1.5.1+cu101
-torchvision==0.6.1+cu101
+torch
+torchvision
