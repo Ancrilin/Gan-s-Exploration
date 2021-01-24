@@ -290,14 +290,14 @@ def main(args):
                     if args.fine_tune:
                         save_model(E, path=config['bert_save_path'], model_name='bert')
 
-                # logger.info(eval_result)
-                # logger.info('valid_eer: {}'.format(eval_result['eer']))
-                # logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
-                # logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
-                # logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
-                # logger.info('valid_auc: {}'.format(eval_result['auc']))
-                # logger.info(
-                #     'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
+                logger.info(eval_result)
+                logger.info('valid_eer: {}'.format(eval_result['eer']))
+                logger.info('valid_oos_ind_precision: {}'.format(eval_result['oos_ind_precision']))
+                logger.info('valid_oos_ind_recall: {}'.format(eval_result['oos_ind_recall']))
+                logger.info('valid_oos_ind_f_score: {}'.format(eval_result['oos_ind_f_score']))
+                logger.info('valid_auc: {}'.format(eval_result['auc']))
+                logger.info(
+                    'valid_fpr95: {}'.format(ErrorRateAt95Recall(eval_result['all_binary_y'], eval_result['y_score'])))
 
         if args.patience >= args.n_epoch:
             save_gan_model(D, G, config['gan_save_path'])
