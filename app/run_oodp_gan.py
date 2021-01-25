@@ -546,6 +546,7 @@ def main(args):
             text_dev_set, text_dev_len = processor.read_dataset(data_path, ['val'])
 
         if args.ood:
+            logger.info('remove ood data...')
             text_train_set = [sample for sample in text_train_set if sample['domain'] != 'chat']
         train_features = processor.convert_to_ids(text_train_set)
         train_dataset = OOSDataset(train_features)
